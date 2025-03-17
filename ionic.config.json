@@ -1,0 +1,7 @@
+{
+  "name": "CRUD SISWA",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
