@@ -1,5 +1,5 @@
-import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonPage, IonTitle, IonToolbar, IonImg, IonInputPasswordToggle, IonSegment, IonToast, IonProgressBar, IonText } from '@ionic/react';
-// import './LoginForm.css';
+import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonPage, IonTitle, IonToolbar, IonImg, IonInputPasswordToggle, IonSegment, IonToast, IonText } from '@ionic/react';
+import './LoginForm.css';
 import { useState, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { loginRequest } from '../hooks/restAPIRequest';
@@ -32,7 +32,7 @@ const LoginForm: React.FC = () => {
 
 	useEffect(() => {
 		if (token && role) {
-			history.replace("/student-list", { isTokenExpired: true });
+			history.replace("/dashboard", { isTokenExpired: true });
 		}
 	}, [token, role, history]);
 
@@ -83,14 +83,13 @@ const LoginForm: React.FC = () => {
 					alertMesage: "Semoga dagangannya laris ya!."
 				});
 				setIsTokenExpired(false)
-				history.push('/student-list')
+				history.push('/dashboard')
 			} else {
 				setAlert({
 					showAlert: true,
 					header: "Gagal!",
 					alertMesage: result.error
 				});
-				// setAlertMessage('Gagal Login, pastikan data sesuai')
 			}
 
 		} catch (error: any) {
@@ -106,7 +105,7 @@ const LoginForm: React.FC = () => {
 
 	useEffect(() => {
 		if (token) {
-			history.replace("/student-list", { isTokenExpired: true })
+			history.replace("/dashboard", { isTokenExpired: true })
 		}
 	}, [token, history, isTokenExpired]);
 
@@ -114,7 +113,7 @@ const LoginForm: React.FC = () => {
 		<IonPage>
 			<IonHeader>
 				<IonToolbar>
-					<IonTitle>Data Siswa APP</IonTitle>
+					<IonTitle>Basreng POS</IonTitle>
 				</IonToolbar>
 			</IonHeader>
 			<IonContent className="ion-padding">
@@ -136,6 +135,9 @@ const LoginForm: React.FC = () => {
 				) : ''
 				}
 				<IonSegment className="login-container">
+					<IonText>
+						<h3>Masuk</h3>
+					</IonText>
 					<IonItem>
 						<IonInput
 							label="Username"
@@ -156,7 +158,7 @@ const LoginForm: React.FC = () => {
 						</IonInput>
 
 					</IonItem>
-					<IonButton expand="full" className="login-button" onClick={handleLogin}>Login</IonButton>
+					<IonButton expand="full" shape='round' className="login-button" color="secondary" onClick={handleLogin}>Masuk</IonButton>
 				</IonSegment>
 			</IonContent>
 

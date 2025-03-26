@@ -1,12 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
-  server: {
-    cleartext: true,
-  },
-  appId: 'io.ionic.starter',
-  appName: 'CRUD SISWA',
-  webDir: 'docs',
-  plugins: {
+	server: {
+		cleartext: true,
+	},
+	appId: 'io.ionic.starter',
+	appName: 'Basreng-POS',
+	webDir: 'docs',
+	plugins: {
 		SplashScreen: {
 			launchShowDuration: 3000, // Durasi splash screen dalam ms (3 detik)
 			launchAutoHide: true, // Sembunyikan otomatis setelah durasi

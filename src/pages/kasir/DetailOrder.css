@@ -1,0 +1,176 @@
+.ion-margin-top {
+  text-align: center;
+}
+
+ion-modal ion-label {
+  font-weight: 500;
+  font-size: 1.3rem;
+}
+
+.col-trash {
+  display: flex;
+  justify-content: center;
+  align-items: center
+}
+
+.amount.title,
+.amount.subtotal {
+  justify-content: start;
+  margin: 0 !important;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-center ion-button {
+  width: 100%;
+}
+
+
+
+/* Receipt */
+.receipt-container {
+  padding: 10px;
+  border: 1px solid black;
+}
+
+.receipt {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.receipt-title th {
+  text-align: center !important;
+  font-weight: 600;
+}
+
+.receipt thead tr span,
+.receipt tbody tr span {
+  display: block;
+  border-top: 1px solid black;
+  width: 100%;
+  margin-bottom: 1.5px;
+}
+
+.receipt tbody {
+  border-top: 1px solid black;
+}
+
+.receipt tbody {
+  border-bottom: 1px solid black;
+}
+
+.receipt th,
+.receipt td {
+  /* border: 1px solid #ddd; */
+  padding: 2px;
+  text-align: left;
+}
+
+.receipt tr th:last-child,
+.receipt tr td:last-child {
+  text-align: right;
+}
+
+.receipt tfoot {
+  font-size: .8rem;
+  text-align: center;
+}
+
+.receipt tfoot tr:nth-child(1) td {
+  border-bottom: 1px solid black;
+}
+
+.receipt tfoot tr:last-child td {
+  padding-top: 22px;
+  font-size: 0.6rem;
+}
+
+.info p:first-child {
+  padding-top: 15px;
+}
+
+.receipt p {
+  text-align: center;
+  margin: 0;
+}
+
+/* extras */
+
+.btn-checkout {
+  margin-top: 15px;
+}
+
+.space {
+  height: 100px;
+}
+
+/* .cash {
+  display: none;
+} */
+
+
+/* order online */
+.button-wrapper ion-button {
+  width: 100vw;
+}
+
+.online-order-receipt {
+  border-top: 1px solid black;
+}
+
+.online-order-receipt td {
+  padding-top: 15px;
+}
+
+.tr-title {
+  font-weight: 600;
+}
+
+.text-left {
+  text-align: left !important;
+}
+
+/* Payment method modal */
+.payment-method {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 80%;
+}
+
+.payment-method div.transfer-bank {
+  border: 1px solid black;
+  padding: 10px;
+}
+
+.payment-method div.QRIS {
+  /* padding: 20px; */
+  margin-top: 50px;
+}
+
+.payment-method {
+  font-size: 1.2rem;
+}
+
+.payment-method h2 {
+  margin-bottom: 0;
+  font-size: 1.7rem;
+}
+
+.payment-method h3 {
+  margin-top: 5px;
+  font-size: 1.2rem;
+}
+
+.payment-method h4 {
+  margin-top: 40px;
+  font-size: 1.6rem;
+}

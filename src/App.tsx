@@ -10,7 +10,7 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router'
-import { images, square, triangle, person } from 'ionicons/icons'
+import { images, square, receiptOutline, list, storefront } from 'ionicons/icons'
 import StudentList from './pages/StudentList'
 import Tab2 from './pages/Tab2'
 import Tab3 from './pages/Tab3'
@@ -40,7 +40,7 @@ import '@ionic/react/css/display.css'
 
 /* import '@ionic/react/css/palettes/dark.always.css'; */
 /* import '@ionic/react/css/palettes/dark.class.css'; */
-import '@ionic/react/css/palettes/dark.system.css'
+// import '@ionic/react/css/palettes/dark.system.css'
 
 /* Theme variables */
 import './theme/variables.css'
@@ -49,6 +49,9 @@ import StudentEdit from './pages/StudentEdit';
 
 import { StudentProvider } from './context/StudentContext'
 import LoginForm from './pages/LoginForm';
+import KasirPage from "./pages/kasir/KasirPage";
+import TransactionHistory from './pages/transaction_history/TransactionHistory';
+import Dashboard from './pages/dashboard/Dashboard';
 
 setupIonicReact();
 
@@ -70,25 +73,31 @@ const App: React.FC = () => (
             <Route exact path={`/student-edit`}>
               <StudentEdit />
             </Route>
-            <Route exact path={`/tab2`}>
-              <Tab2 />
+            <Route exact path={`/kasir`}>
+              <KasirPage />
+            </Route>
+            <Route exact path={`/transaction-history`}>
+              <TransactionHistory />
+            </Route>
+            <Route exact path={`/dashboard`}>
+              <Dashboard />
             </Route>
             <Route exact path={`/`}>
-              <LoginForm />
+              <Dashboard />
             </Route>
           </IonRouterOutlet>
           <IonTabBar slot="bottom">
-            <IonTabButton tab="student-list" href={`/student-list`}>
-              <IonIcon aria-hidden="true" icon={person} />
-              <IonLabel>Siswa</IonLabel>
+            <IonTabButton tab="dashboard" href={`/dashboard`}>
+              <IonIcon aria-hidden="true" icon={storefront} />
+              <IonLabel>Dashboard</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="tab2" href={`/tab2`}>
-              <IonIcon aria-hidden="true" icon={images} />
-              <IonLabel>Gallerys</IonLabel>
+            <IonTabButton tab="kasir" href={`/kasir`}>
+              <IonIcon aria-hidden="true" icon={receiptOutline} />
+              <IonLabel>Kasir</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="tab3" href={`/login`}>
-              <IonIcon aria-hidden="true" icon={square} />
-              <IonLabel>Login</IonLabel>
+            <IonTabButton tab="student-list" href={`/transaction-history`}>
+              <IonIcon aria-hidden="true" icon={list} />
+              <IonLabel>Riwayat Transaksi</IonLabel>
             </IonTabButton>
           </IonTabBar>
         </IonTabs>

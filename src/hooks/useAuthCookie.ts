@@ -8,14 +8,17 @@ const COOKIE_EXPIRATION_MINUTES = COOKIE_EXPIRATION_HOURS * 60;
 export const useAuth = () => {
   const [token, setToken] = useState(Cookies.get("token") || null);
   const [role, setRole] = useState(Cookies.get("role") || null);
+  const [idUser, setIdUser] = useState(Cookies.get("id_user") || null);
   const history = useHistory();
 
   const login = (jwtToken: string) => {
     Cookies.set("token", jwtToken, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
     const payload = JSON.parse(atob(jwtToken.split(".")[1]));
     Cookies.set("role", payload.data.role, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
+    Cookies.set("id_user", payload.data.id, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
     setToken(jwtToken);
     setRole(payload.data.role);
+    setIdUser(payload.data.id)
     history.push("/student-list");
   };
 
