@@ -10,7 +10,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
-    <IonCard key={product.id}>
+    <IonCard>
       <IonGrid>
         <IonRow>
           <IonCol className="img-card">
@@ -38,9 +38,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </IonButton>
               </div>
               <div className="amount">
+                <IonButton shape="round" size="small">3</IonButton>
                 <IonButton shape="round" size="small">6</IonButton>
                 <IonButton shape="round" size="small">12</IonButton>
-                <IonButton shape="round" size="small">24</IonButton>
               </div>
               <div className="amount price">
                 <p>Subtotal: <span>{rupiahFormat("60000.00")}</span></p>

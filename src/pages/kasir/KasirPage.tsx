@@ -27,6 +27,11 @@ import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import DetailOrder from "./DetailOrder";
 import ProductCard from "../../components/ProductCard";
 
+// Redux
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "../../redux/productSlice";
+import { RootState, AppDispatch } from "../../redux/store"
+
 // styling
 import "./KasirPage.css";
 
@@ -52,37 +57,50 @@ const KasirPage: React.FC = () => {
   }, [token, role, history]);
 
   // ===== states
-  const [products, setProducts] = useState<DataProduct[]>([]);
+  // const [products, setProducts] = useState<DataProduct[]>([]);
   const [isRefresh, setIsRefresh] = useState(true);
 
   // ===== functions/method 
-  const fetchProducts = useCallback(async () => {
+  // const fetchProducts = useCallback(async () => {
 
-    const getData: any = await getDataProducts(setProducts);
+  //   const getData: any = await getDataProducts(setProducts);
 
-    if (getData !== undefined) {
-      setAlert({
-        showAlert: true,
-        header: `Kasalahan Server!`,
-        alertMesage: getData
-      });
-    }
+  //   if (getData !== undefined) {
+  //     setAlert({
+  //       showAlert: true,
+  //       header: `Kasalahan Server!`,
+  //       alertMesage: getData
+  //     });
+  //   }
 
-  }, [])
+  // }, [])
 
   // ===== uses
+
+  const { products, isLoading, error } = useSelector((state: RootState) => state.products);
+  const dispatch = useDispatch<AppDispatch>();
 
   // Jalankan fetchProducts saat pertama kali komponen dimuat
   useIonViewWillEnter(() => {
     setIsRefresh(false);
-    fetchProducts()
-  }, [fetchProducts])
+    dispatch(fetchProducts());
+  }, [dispatch])
 
   useEffect(() => {
     if (isRefresh) {
       setIsRefresh(false)
     }
+    if (error) {
+      setAlert({
+        showAlert: true,
+        header: "Peringatan",
+        alertMesage: "Tidak dapat terhubung ke server. Periksa koneksi Anda.",
+      });
+    }
   }, [isRefresh])
+
+  console.log(products);
+  console.log(error);
 
   return (
     <IonPage>
@@ -121,7 +139,7 @@ const KasirPage: React.FC = () => {
                   {products
                     .filter((product) => product.category_id === "1" && product.name.toLowerCase().includes("basreng"))
                     .map((product) => (
-                      <ProductCard product={product} />
+                      <ProductCard product={product} key={product.id} />
                     ))}
                 </div>
               </IonAccordion>
@@ -133,7 +151,7 @@ const KasirPage: React.FC = () => {
                   {products
                     .filter((product) => product.category_id === "1" && product.name.toLowerCase().includes("cimol"))
                     .map((product) => (
-                      <ProductCard product={product} />
+                      <ProductCard product={product} key={product.id} />
                     ))}
                 </div>
               </IonAccordion>
@@ -145,7 +163,7 @@ const KasirPage: React.FC = () => {
                   {products
                     .filter((product) => product.category_id === "1" && product.name.toLowerCase().includes("kripca"))
                     .map((product) => (
-                      <ProductCard product={product} />
+                      <ProductCard product={product} key={product.id} />
                     ))}
                 </div>
               </IonAccordion>
@@ -156,14 +174,14 @@ const KasirPage: React.FC = () => {
             {products
               .filter((product) => product.category_id === "2")
               .map((product) => (
-                <ProductCard product={product} />
+                <ProductCard product={product} key={product.id} />
               ))}
           </IonSegmentContent>
           <IonSegmentContent id="3">
             {products
               .filter((product) => product.category_id === "3")
               .map((product) => (
-                <ProductCard product={product} />
+                <ProductCard product={product} key={product.id} />
               ))}
           </IonSegmentContent>
         </IonSegmentView>

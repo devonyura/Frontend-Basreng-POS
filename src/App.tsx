@@ -64,9 +64,9 @@ const App: React.FC = () => (
             <Route exact path={`/login`}>
               <LoginForm />
             </Route>
-            <Route exact path={`/student-list`}>
+            {/* <Route exact path={`/student-list`}>
               <StudentList />
-            </Route>
+            </Route> */}
             <Route exact path={`/student-add`}>
               <StudentAdd />
             </Route>

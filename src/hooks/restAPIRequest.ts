@@ -12,6 +12,7 @@ export interface ApiResponse {
 export interface DataProduct {
 	id: string;
 	category_id: string;
+	subcategory_id: string;
 	name: string;
 	price: string;
 }
@@ -34,7 +35,7 @@ export interface DataToken {
 	token: string;
 }
 
-export const isApiOnline = async (): Promise<boolean> => {
+export const isApiOnline = async (): Promise<boolean | any> => {
 	try {
 		const response = await fetch(`${BASE_API_URL}/api/ping`, { method: "HEAD" });
 		return response.ok;
@@ -95,7 +96,48 @@ const checkOKResponse = (response: any) => {
 }
 
 
-export const getAllData = async (setStudens: React.Dispatch<React.SetStateAction<Student[]>>) => {
+// export const getAllData = async (setStudens: React.Dispatch<React.SetStateAction<Student[]>>) => {
+// 	try {
+// 		// Ambil token JWT dari localStorage
+// 		const TOKEN = Cookies.get("token");
+
+// 		// Cek apakah API online
+// 		const apiOnline = await isApiOnline();
+// 		console.log(apiOnline);
+// 		if (!apiOnline) {
+// 			return "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
+// 		}
+
+// 		// Konfigurasi request dengan header Authorization
+// 		const response = await fetch(`${BASE_API_URL}/api/siswa`, {
+// 			method: "GET",
+// 			credentials: "include",
+// 			headers: {
+// 				"Content-Type": "application/json",
+// 				"Authorization": `Bearer ${TOKEN}`,
+// 			},
+// 		});
+
+// 		// Check Response
+// 		checkOKResponse(response);
+
+// 		// Ubah data ke json format
+// 		const data = await response.json();
+
+// 		console.info("Status Request getAllData() : ", data.status);
+
+// 		// set State student
+// 		setStudens(data.data);
+
+// 	} catch (error) {
+// 		// Kirim error jika gagal request
+// 		console.error("Error Fetching Students", error);
+// 		return error;
+// 	}
+// };
+
+// setProducts: React.Dispatch<React.SetStateAction<DataProduct[]> | null>
+export const getDataProducts = async () => {
 	try {
 		// Ambil token JWT dari localStorage
 		const TOKEN = Cookies.get("token");
@@ -103,46 +145,7 @@ export const getAllData = async (setStudens: React.Dispatch<React.SetStateAction
 		// Cek apakah API online
 		const apiOnline = await isApiOnline();
 		if (!apiOnline) {
-			return "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
-		}
-
-		// Konfigurasi request dengan header Authorization
-		const response = await fetch(`${BASE_API_URL}/api/siswa`, {
-			method: "GET",
-			credentials: "include",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${TOKEN}`,
-			},
-		});
-
-		// Check Response
-		checkOKResponse(response);
-
-		// Ubah data ke json format
-		const data = await response.json();
-
-		console.info("Status Request getAllData() : ", data.status);
-
-		// set State student
-		setStudens(data.data);
-
-	} catch (error) {
-		// Kirim error jika gagal request
-		console.error("Error Fetching Students", error);
-		return error;
-	}
-};
-
-export const getDataProducts = async (setProducts: React.Dispatch<React.SetStateAction<DataProduct[]>>) => {
-	try {
-		// Ambil token JWT dari localStorage
-		const TOKEN = Cookies.get("token");
-
-		// Cek apakah API online
-		const apiOnline = await isApiOnline();
-		if (!apiOnline) {
-			return "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
+			throw new Error("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
 		}
 
 		// Konfigurasi request dengan header Authorization
@@ -165,7 +168,10 @@ export const getDataProducts = async (setProducts: React.Dispatch<React.SetState
 		console.info("Data products : ", data.data);
 
 		// set State student
-		setProducts(data.data);
+		// setProducts(data.data);
+
+		// return product data
+		return data.data;
 
 	} catch (error) {
 		// Kirim error jika gagal request
