@@ -12,42 +12,38 @@ import {
   IonSegmentContent,
   IonSegmentView,
   useIonViewWillEnter,
-  IonAccordion, IonAccordionGroup, IonItem
+  IonAccordion, IonAccordionGroup, IonItem,
+  IonAlert
 } from '@ionic/react';
 
+// State, History etc
 import { useState, useEffect, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 // hooks
-import { getDataProducts, DataProduct } from '../../hooks/restAPIRequest'
 import { useAuth } from "../../hooks/useAuthCookie";
 
 // components
-import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import DetailOrder from "./DetailOrder";
 import ProductCard from "../../components/ProductCard";
 
 // Redux
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../../redux/productSlice";
+import { fetchCategories } from "../../redux/categorySlice";
+import { fetchSubCategories } from "../../redux/subCategorySlice";
 import { RootState, AppDispatch } from "../../redux/store"
 
 // styling
 import "./KasirPage.css";
+import { toLower } from 'ionicons/dist/types/components/icon/utils';
 
 const KasirPage: React.FC = () => {
-
-  // ===== setup Alert
-  const [alert, setAlert] = useState<AlertState>({
-    showAlert: false,
-    header: '',
-    alertMesage: '',
-    hideButton: false,
-  });
 
   // ===== Setup Auth
   const { token, role } = useAuth();
   const history = useHistory();
+
 
   // Redirect if token expired/wrong
   useEffect(() => {
@@ -56,54 +52,61 @@ const KasirPage: React.FC = () => {
     }
   }, [token, role, history]);
 
-  // ===== states
-  // const [products, setProducts] = useState<DataProduct[]>([]);
-  const [isRefresh, setIsRefresh] = useState(true);
-
-  // ===== functions/method 
-  // const fetchProducts = useCallback(async () => {
-
-  //   const getData: any = await getDataProducts(setProducts);
-
-  //   if (getData !== undefined) {
-  //     setAlert({
-  //       showAlert: true,
-  //       header: `Kasalahan Server!`,
-  //       alertMesage: getData
-  //     });
-  //   }
-
-  // }, [])
-
-  // ===== uses
-
-  const { products, isLoading, error } = useSelector((state: RootState) => state.products);
+  // get Redux State
   const dispatch = useDispatch<AppDispatch>();
+  const { products, isLoading, error: productError } = useSelector((state: RootState) => state.products)
+  const { categories, error: categoryError } = useSelector((state: RootState) => state.categories)
+  const { subCategories, error: subCategoryError } = useSelector((state: RootState) => state.subCategories)
 
   // Jalankan fetchProducts saat pertama kali komponen dimuat
   useIonViewWillEnter(() => {
-    setIsRefresh(false);
-    dispatch(fetchProducts());
+    dispatch(fetchProducts())
+    dispatch(fetchCategories())
+    dispatch(fetchSubCategories())
   }, [dispatch])
 
-  useEffect(() => {
-    if (isRefresh) {
-      setIsRefresh(false)
-    }
-    if (error) {
-      setAlert({
-        showAlert: true,
-        header: "Peringatan",
-        alertMesage: "Tidak dapat terhubung ke server. Periksa koneksi Anda.",
-      });
-    }
-  }, [isRefresh])
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
-  console.log(products);
-  console.log(error);
+  useEffect(() => {
+    if (productError || categoryError || subCategoryError) {
+      setIsNoInternetOpen(true)
+    }
+
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory('1');
+    }
+
+  }, [productError, categoryError, selectedCategory])
+
+  // No Internet Connection Alert 
+  const [isNoInternetOpen, setIsNoInternetOpen] = useState(false)
+
+  // cek kategori
+  const filteredSubCategories = subCategories.filter(
+    (sub) => sub.id_categories === selectedCategory
+  );
+
+  const hasSubCategories = filteredSubCategories.length > 0;
 
   return (
     <IonPage>
+      <IonAlert
+        isOpen={isNoInternetOpen}
+        header='Peringatan'
+        message="Tidak dapat terhubung ke server. Periksa koneksi Anda."
+        buttons={[
+          {
+            text: 'Coba Lagi',
+            role: 'confirm',
+            handler: () => {
+              setIsNoInternetOpen(false)
+              dispatch(fetchProducts())
+            }
+          }
+        ]}
+        onDidDismiss={() => setIsNoInternetOpen(false)}
+        backdropDismiss={false}
+      ></IonAlert>
       <IonHeader>
         <IonToolbar>
           <IonTitle>
@@ -116,87 +119,54 @@ const KasirPage: React.FC = () => {
           Pilih Item yang akan dibeli:
         </h2>
 
-        <IonSegment>
-          <IonSegmentButton value="1" contentId="1">
-            <IonLabel>Cemilan</IonLabel>
-          </IonSegmentButton>
-          <IonSegmentButton value="2" contentId="2">
-            <IonLabel>Mochi</IonLabel>
-          </IonSegmentButton>
-          <IonSegmentButton value="3" contentId="3">
-            <IonLabel>Sushi</IonLabel>
-          </IonSegmentButton>
+        <IonSegment value={selectedCategory} onIonChange={(e) => setSelectedCategory(String(e.detail.value!))}>
+          {categories.map((cat) => (
+            <IonSegmentButton key={cat.id} value={cat.id}>
+              <IonLabel>{cat.name}</IonLabel>
+            </IonSegmentButton>
+          ))}
         </IonSegment>
-        <IonSegmentView>
 
-          <IonSegmentContent id="1">
+        {hasSubCategories ? (
+          <div className="">
             <IonAccordionGroup>
-              <IonAccordion value="first">
-                <IonItem slot="header" color="light">
-                  <IonLabel>Basreng</IonLabel>
-                </IonItem>
-                <div className="ion-padding" slot="content">
-                  {products
-                    .filter((product) => product.category_id === "1" && product.name.toLowerCase().includes("basreng"))
-                    .map((product) => (
-                      <ProductCard product={product} key={product.id} />
-                    ))}
-                </div>
-              </IonAccordion>
-              <IonAccordion value="second">
-                <IonItem slot="header" color="light">
-                  <IonLabel>Cimol</IonLabel>
-                </IonItem>
-                <div className="ion-padding" slot="content">
-                  {products
-                    .filter((product) => product.category_id === "1" && product.name.toLowerCase().includes("cimol"))
-                    .map((product) => (
-                      <ProductCard product={product} key={product.id} />
-                    ))}
-                </div>
-              </IonAccordion>
-              <IonAccordion value="third">
-                <IonItem slot="header" color="light">
-                  <IonLabel>Kripik Kaca</IonLabel>
-                </IonItem>
-                <div className="ion-padding" slot="content">
-                  {products
-                    .filter((product) => product.category_id === "1" && product.name.toLowerCase().includes("kripca"))
-                    .map((product) => (
-                      <ProductCard product={product} key={product.id} />
-                    ))}
-                </div>
-              </IonAccordion>
+              {
+                subCategories
+                  .filter((sub) => sub.id_categories === selectedCategory)
+                  .map((sub) => (
+                    <IonAccordion key={sub.id} value={sub.id}>
+                      <IonItem slot='header'>
+                        <IonLabel>{sub.name}</IonLabel>
+                      </IonItem>
+                      <div className="ion-padding" slot='content'>
+                        {products
+                          .filter((product) => (
+                            product.category_id === selectedCategory &&
+                            product.name.toLowerCase().includes(sub.name.toLowerCase())
+                          ))
+                          .map((product) => (
+                            <ProductCard key={product.id} product={product} />
+                          ))
+                        }
+                      </div>
+                    </IonAccordion>
+                  ))
+              }
             </IonAccordionGroup>
-
-          </IonSegmentContent>
-          <IonSegmentContent id="2">
+          </div>
+        ) : (
+          <div className="ion-padding">
             {products
-              .filter((product) => product.category_id === "2")
+              .filter((product) => product.category_id === selectedCategory)
               .map((product) => (
-                <ProductCard product={product} key={product.id} />
+                <ProductCard key={product.id} product={product} />
               ))}
-          </IonSegmentContent>
-          <IonSegmentContent id="3">
-            {products
-              .filter((product) => product.category_id === "3")
-              .map((product) => (
-                <ProductCard product={product} key={product.id} />
-              ))}
-          </IonSegmentContent>
-        </IonSegmentView>
+          </div>
+        )}
 
         {/* Detail Order Component */}
         <DetailOrder />
       </IonContent>
-
-      <AlertInfo
-        isOpen={alert.showAlert}
-        header={alert.header}
-        message={alert.alertMesage}
-        onDidDismiss={() => setAlert(prevState => ({ ...prevState, showAlert: false }))}
-        hideButton={alert.hideButton}
-      />
     </IonPage>
   )
 };
