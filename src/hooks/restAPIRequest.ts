@@ -273,6 +273,50 @@ export const getSubCategories = async () => {
 	}
 };
 
+export const getBranch = async () => {
+	try {
+		// Ambil token JWT dari localStorage
+		const TOKEN = Cookies.get("token");
+
+		// Cek apakah API online
+		const apiOnline = await isApiOnline();
+		if (!apiOnline) {
+			throw new Error("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+		}
+
+		// Konfigurasi request dengan header Authorization
+		const response = await fetch(`${BASE_API_URL}/api/branch`, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${TOKEN}`,
+			},
+		});
+
+		// Check Response
+		checkOKResponse(response);
+
+		// Ubah data ke json format
+		const data = await response.json();
+
+		console.info(data);
+		console.info("Status Request getCategories() : ", data.status);
+		console.info("Data categories : ", data.data);
+
+		// set State student
+		// setProducts(data.data);
+
+		// return product data
+		return data.data;
+
+	} catch (error) {
+		// Kirim error jika gagal request
+		console.error("Error Fetching categories", error);
+		return error;
+	}
+};
+
 export const saveData = async (newStudents: object): Promise<ApiResponse> => {
 	return new Promise(async (resolve, reject) => {
 		try {

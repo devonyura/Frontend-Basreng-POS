@@ -36,7 +36,6 @@ import { RootState, AppDispatch } from "../../redux/store"
 
 // styling
 import "./KasirPage.css";
-import { toLower } from 'ionicons/dist/types/components/icon/utils';
 
 const KasirPage: React.FC = () => {
 

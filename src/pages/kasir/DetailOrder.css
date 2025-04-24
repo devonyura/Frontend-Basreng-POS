@@ -30,75 +30,6 @@ ion-modal ion-label {
 }
 
 
-
-/* Receipt */
-.receipt-container {
-  padding: 10px;
-  border: 1px solid black;
-}
-
-.receipt {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-.receipt-title th {
-  text-align: center !important;
-  font-weight: 600;
-}
-
-.receipt thead tr span,
-.receipt tbody tr span {
-  display: block;
-  border-top: 1px solid black;
-  width: 100%;
-  margin-bottom: 1.5px;
-}
-
-.receipt tbody {
-  border-top: 1px solid black;
-}
-
-.receipt tbody {
-  border-bottom: 1px solid black;
-}
-
-.receipt th,
-.receipt td {
-  /* border: 1px solid #ddd; */
-  padding: 2px;
-  text-align: left;
-}
-
-.receipt tr th:last-child,
-.receipt tr td:last-child {
-  text-align: right;
-}
-
-.receipt tfoot {
-  font-size: .8rem;
-  text-align: center;
-}
-
-.receipt tfoot tr:nth-child(1) td {
-  border-bottom: 1px solid black;
-}
-
-.receipt tfoot tr:last-child td {
-  padding-top: 22px;
-  font-size: 0.6rem;
-}
-
-.info p:first-child {
-  padding-top: 15px;
-}
-
-.receipt p {
-  text-align: center;
-  margin: 0;
-}
-
 /* extras */
 
 .btn-checkout {
@@ -171,6 +102,10 @@ ion-modal ion-label {
 }
 
 .payment-method h4 {
-  margin-top: 40px;
+  margin-top: 20px;
   font-size: 1.6rem;
+}
+
+.hidden-button {
+  display: none;
 }
