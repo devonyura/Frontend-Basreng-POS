@@ -18,13 +18,13 @@ import { cart } from 'ionicons/icons';
 
 import { useState, useEffect, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { loginRequest } from '../../hooks/restAPIRequest';
+import { loginRequest, getBranch } from '../../hooks/restAPIRequest';
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
 import { OverlayEventDetail } from '@ionic/core/components';
 import qrcode from "../../../public/img/qr/images.png"
-import Receipt from "../../components/Receipt";
+import Receipt, { BranchData } from "../../components/Receipt";
 
 // Redux
 import { useSelector } from "react-redux";
@@ -32,7 +32,8 @@ import { RootState } from '../../redux/store';
 import ProductCartItem from '../../components/ProductCartItem';
 import { selectorCartTotal } from "../../redux/cartSelectors";
 
-import { rupiahFormat, calculateChange } from '../../hooks/formatting';
+import { rupiahFormat, calculateChange, generateReceiptNumber } from '../../hooks/formatting';
+import React from 'react';
 
 const DetailOrder: React.FC = () => {
   const modal = useRef<HTMLIonModalElement>(null);
@@ -56,6 +57,10 @@ const DetailOrder: React.FC = () => {
 
   let change = calculateChange(Number(cashGiven), total)
 
+  const { username, branchID, idUser } = useAuth()
+  const receiptNoteNumber = generateReceiptNumber(Number(branchID), username)
+  const buttonColorCash = ["success", "warning", "secondary", "danger"]
+
   useEffect(() => {
 
     if (isCash) {
@@ -67,12 +72,64 @@ const DetailOrder: React.FC = () => {
   }, [isCash])
 
 
-
   function onWillDismiss(event: CustomEvent<OverlayEventDetail>) {
 
   }
 
-  const buttonColorCash = ["success", "warning", "secondary", "danger"]
+  const [branchDataState, setBranchDataState] = useState<BranchData | null>(null)
+
+  useEffect(() => {
+
+    const fetchBranch = async () => {
+      try {
+        const data = await getBranch(Number(branchID));
+        setBranchDataState(data);
+        console.log(branchDataState)
+      } catch (err) {
+        console.error("Gagal load branch info:", err);
+      }
+    }
+
+    fetchBranch()
+  }, [])
+
+  const handleSubmitTransaction = () => {
+    if (!branchDataState) {
+      console.warn("Branch belum dimuat.");
+      return;
+    }
+
+    const dateTimeNow = new Date();
+    const formattedDateTime = dateTimeNow.toISOString().replace("T", " ").substring(0, 19); // format: yyyy-MM-dd HH:mm:ss
+
+    const transactionData = {
+      transaction: {
+        transaction_code: generateReceiptNumber(Number(branchID), username),
+        user_id: Number(idUser),
+        branch_id: Number(branchID),
+        date_time: formattedDateTime,
+        total_price: total,
+        cash_amount: cashGiven,
+        change_amount: change,
+        payment_method: paymentMethod,
+        is_online_order: isOnlineOrder,
+        customer_name: customerInfo.name,
+        customer_phone: customerInfo.phone,
+        customer_address: customerInfo.address,
+        notes: customerInfo.notes
+      },
+
+      transaction_details: cartItems.map(item => ({
+        product_id: Number(item.id), // pastikan item.id adalah ID produk asli dari DB
+        quantity: item.quantity,
+        price: item.price
+      }))
+    };
+
+    console.log("Data Transaksi Siap Dikirim:", transactionData);
+  };
+
+
 
   return (
     <>
@@ -184,10 +241,12 @@ const DetailOrder: React.FC = () => {
             isOnlineOrders={isOnlineOrder}
             customerInfo={customerInfo}
             cartItems={cartItems}
+            receiptNoteNumber={receiptNoteNumber}
+            branchData={branchDataState}
           >
 
           </Receipt>
-          <IonButton expand="block" className='btn-checkout'>Selesaikan Transaksi</IonButton>
+          <IonButton expand="block" className='btn-checkout' color="success" onClick={handleSubmitTransaction}>Selesaikan Transaksi</IonButton>
           <div className='space'></div>
         </IonContent>
         <IonModal

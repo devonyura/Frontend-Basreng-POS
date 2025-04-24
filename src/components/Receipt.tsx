@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonItem } from "@ionic/react";
+import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonItem, useIonViewWillEnter } from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
-import { rupiahFormat, generateReceiptNumber } from "../hooks/formatting";
-import { DataProduct } from '../hooks/restAPIRequest'
+import { rupiahFormat, } from "../hooks/formatting";
+import { getBranch } from '../hooks/restAPIRequest'
 import { useAuth } from "../hooks/useAuthCookie";
 import "./Receipt.css"
 
@@ -26,20 +26,22 @@ interface ReceiptProps {
     price: number;
     quantity: number;
   }[];
+  receiptNoteNumber: string;
+  branchData: BranchData | null;
 }
 
-const Receipt: React.FC<ReceiptProps> = ({ cash, change, total, isOnlineOrders, customerInfo, cartItems }) => {
-  // console.log("Change:", change);
-  // console.log("Total:", total);
 
-  // get Auth Data
-  const { token, role, username, idUser, branchID } = useAuth()
+export interface BranchData {
+  branch_id: string;
+  branch_name: string;
+  branch_address: string;
+}
 
-  useEffect(() => {
-    console.log("online Order:", isOnlineOrders)
-  }, [isOnlineOrders])
+const Receipt: React.FC<ReceiptProps> = ({ cash, change, total, isOnlineOrders, customerInfo, cartItems, receiptNoteNumber, branchData }) => {
 
-  const receiptNoteNumber = generateReceiptNumber(Number(branchID), username)
+  const { username } = useAuth()
+
+  const [branchDataState, setBranchDataState] = useState<BranchData | null>(branchData)
 
   return (
     <div className='receipt-container'>
@@ -116,7 +118,7 @@ const Receipt: React.FC<ReceiptProps> = ({ cash, change, total, isOnlineOrders, 
             <td colSpan={4} className='info'>
               <p>- Basreng Ghosting Palu -</p>
               <p>- Berbagai cemilan pedas, mochi & sushi -</p>
-              <p>- Jl.Masjid Raya (depan Masjid) -</p>
+              <p>- {branchDataState?.branch_address} -</p>
               <p>Selamat Menikmati :) </p>
               <p>PESANAN SUDAH DISTRUK TIDAK DAPAT DIUBAH</p>
             </td>

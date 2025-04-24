@@ -52,10 +52,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     dispatch(removeFromCart(product.id))
   }
 
-  useEffect(() => {
-    console.log(cartItems)
-  }, [cartItems])
-
   return (
     <IonCard>
       <IonGrid>

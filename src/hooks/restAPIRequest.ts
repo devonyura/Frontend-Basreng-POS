@@ -273,7 +273,7 @@ export const getSubCategories = async () => {
 	}
 };
 
-export const getBranch = async () => {
+export const getBranch = async (id: number | null = null) => {
 	try {
 		// Ambil token JWT dari localStorage
 		const TOKEN = Cookies.get("token");
@@ -285,7 +285,7 @@ export const getBranch = async () => {
 		}
 
 		// Konfigurasi request dengan header Authorization
-		const response = await fetch(`${BASE_API_URL}/api/branch`, {
+		const response = await fetch(`${BASE_API_URL}/api/branch/${id}`, {
 			method: "GET",
 			credentials: "include",
 			headers: {
@@ -301,14 +301,12 @@ export const getBranch = async () => {
 		const data = await response.json();
 
 		console.info(data);
-		console.info("Status Request getCategories() : ", data.status);
-		console.info("Data categories : ", data.data);
 
 		// set State student
 		// setProducts(data.data);
 
 		// return product data
-		return data.data;
+		return data;
 
 	} catch (error) {
 		// Kirim error jika gagal request
