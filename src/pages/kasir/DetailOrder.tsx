@@ -18,7 +18,7 @@ import { cart } from 'ionicons/icons';
 
 import { useState, useEffect, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { loginRequest, getBranch } from '../../hooks/restAPIRequest';
+import { loginRequest, getBranch, TransactionPayload, createTransaction } from '../../hooks/restAPIRequest';
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
@@ -46,10 +46,10 @@ const DetailOrder: React.FC = () => {
   // Form
   const [cashGiven, setCashGiven] = useState<number | null>(null);
   const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    notes: ''
+    name: "",
+    phone: "",
+    address: "",
+    notes: ""
   });
 
   const cartItems = useSelector((state: RootState) => state.cart.items)
@@ -66,7 +66,7 @@ const DetailOrder: React.FC = () => {
     if (isCash) {
       setCashGiven(total)
     } else {
-      setCashGiven(0)
+      setCashGiven(null)
     }
 
   }, [isCash])
@@ -93,7 +93,7 @@ const DetailOrder: React.FC = () => {
     fetchBranch()
   }, [])
 
-  const handleSubmitTransaction = () => {
+  const handleSubmitTransaction = async () => {
     if (!branchDataState) {
       console.warn("Branch belum dimuat.");
       return;
@@ -102,32 +102,83 @@ const DetailOrder: React.FC = () => {
     const dateTimeNow = new Date();
     const formattedDateTime = dateTimeNow.toISOString().replace("T", " ").substring(0, 19); // format: yyyy-MM-dd HH:mm:ss
 
-    const transactionData = {
+    const cash_amounts = isCash ? total : cashGiven ?? 0;
+
+    const transactionData: TransactionPayload = {
       transaction: {
         transaction_code: generateReceiptNumber(Number(branchID), username),
         user_id: Number(idUser),
         branch_id: Number(branchID),
         date_time: formattedDateTime,
         total_price: total,
-        cash_amount: cashGiven,
+        cash_amount: cash_amounts,
         change_amount: change,
         payment_method: paymentMethod,
-        is_online_order: isOnlineOrder,
-        customer_name: customerInfo.name,
-        customer_phone: customerInfo.phone,
-        customer_address: customerInfo.address,
-        notes: customerInfo.notes
+        is_online_order: isOnlineOrder === true ? 1 : 0,
+        customer_name: customerInfo.name === "" ? null : customerInfo.name,
+        customer_phone: customerInfo.phone === "" ? null : customerInfo.phone,
+        customer_address: customerInfo.address === "" ? null : customerInfo.name,
+        notes: customerInfo.notes === "" ? null : customerInfo.notes
       },
 
       transaction_details: cartItems.map(item => ({
         product_id: Number(item.id), // pastikan item.id adalah ID produk asli dari DB
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        subtotal: item.subtotal
       }))
-    };
+    }
 
     console.log("Data Transaksi Siap Dikirim:", transactionData);
-  };
+
+    // setAlert({
+    //       showAlert: true,
+    //       header: "Sedang menyimpan",
+    //       alertMesage: "Tunggu Sebentar...",
+    //       hideButton: true,
+    //     });
+
+    //     const newStudent = { name, address, gender }
+
+    // if (!checkForm("Nama", newStudent.name)) {
+    //   return
+    // }
+    // if (!checkForm("Alamat", newStudent.address)) {
+    //   return
+    // }
+
+    try {
+
+      const result = await createTransaction(transactionData)
+
+      if (result.success) {
+        // resetForm();
+        // setAlert({
+        //   showAlert: true,
+        //   header: "Berhasil",
+        //   alertMesage: "Data Murid ditambahkan."
+        // });
+
+        // history.push('/student-list')
+        console.log("Transaksi Berhasil Dicatat!", result)
+      } else {
+        // setAlert({
+        //   showAlert: true,
+        //   header: "Gagal!",
+        //   alertMesage: result.error
+        // });
+        console.log("Transaksi Gagal Dicatat: ", result)
+      }
+
+    } catch (error: any) {
+      console.log("Transaksi Gagal Dicatat: ", error)
+      // setAlert({
+      //   showAlert: true,
+      //   header: "Kasalahan Server!",
+      //   alertMesage: error.error
+      // });
+    }
+  }
 
 
 
@@ -200,10 +251,6 @@ const DetailOrder: React.FC = () => {
                   {[20000, 30000, 50000, 100000].map((nominal, key) => (
                     <IonButton key={nominal} color={buttonColorCash[key]} size='small' onClick={() => setCashGiven(nominal)}>{rupiahFormat(nominal)}</IonButton>
                   ))}
-                  {/* <IonButton color={"success"} size='small'>20K</IonButton>
-                  <IonButton color={"success"} size='small'>30K</IonButton>
-                  <IonButton color={"secondary"} size='small'>50K</IonButton>
-                  <IonButton color={"danger"} size='small'>100K</IonButton> */}
                 </IonItem>
                 <IonItem>
                   <IonInput label="Kembalian:" value={rupiahFormat(change)} disabled></IonInput>

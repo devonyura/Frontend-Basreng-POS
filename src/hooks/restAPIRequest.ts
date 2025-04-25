@@ -34,6 +34,34 @@ export interface Auth {
 	password: string;
 }
 
+export interface TransactionPayload {
+	transaction: Transaction;
+	transaction_details: TransactionDetails[];
+}
+
+interface Transaction {
+	transaction_code: string;
+	user_id: number;
+	branch_id: number;
+	date_time: string;
+	total_price: number;
+	cash_amount: number | null;
+	change_amount: number;
+	payment_method: string;
+	is_online_order: boolean | number;
+	customer_name: string | null;
+	customer_phone: string | null;
+	customer_address: string | null;
+	notes: string | null;
+}
+
+interface TransactionDetails {
+	product_id: number;
+	quantity: number;
+	price: number;
+	subtotal: number;
+}
+
 export interface DataToken {
 	status: string;
 	message: string;
@@ -91,7 +119,7 @@ export const loginRequest = async (authData: Auth): Promise<ApiResponse> => {
 };
 
 const checkOKResponse = (response: any) => {
-	console.log(response);
+	// console.log(response);
 	if (!response.ok) {
 		if (response.status === 401) {
 			console.error("Unauthorized! Token mungkin sudah expired/salah.")
@@ -300,7 +328,7 @@ export const getBranch = async (id: number | null = null) => {
 		// Ubah data ke json format
 		const data = await response.json();
 
-		console.info(data);
+		// console.info(data);
 
 		// set State student
 		// setProducts(data.data);
@@ -313,6 +341,81 @@ export const getBranch = async (id: number | null = null) => {
 		console.error("Error Fetching categories", error);
 		return error;
 	}
+};
+
+export const createTransaction = async (transactionPayload: TransactionPayload): Promise<ApiResponse> => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			// Ambil token JWT dari localStorage
+			const TOKEN = Cookies.get("token");
+
+			// Cek apakah API online
+			const apiOnline = await isApiOnline();
+			if (!apiOnline) {
+				reject("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+				return;
+			}
+
+			let trasactionDummy = {
+				"transaction": {
+					"transaction_code": "CB1-100425-1045-ILA",
+					"user_id": 1,
+					"branch_id": 1,
+					"date_time": "2025-04-19 16:45:00",
+					"total_price": 15000,
+					"cash_amount": 100000,
+					"change_amount": 85000,
+					"payment_method": "cash",
+					"is_online_order": true,
+					"customer_name": "John Doe",
+					"customer_phone": "08123456789",
+					"customer_address": "Jl. Mawar No.5",
+					"notes": "Tanpa cabe"
+				},
+				"transaction_details": [
+					{
+						"product_id": 1,
+						"quantity": 2,
+						"price": 25000,
+						"subtotal": 5000
+					},
+					{
+						"product_id": 2,
+						"quantity": 1,
+						"price": 50000,
+						"subtotal": 5000
+					}
+				]
+			}
+			console.warn(transactionPayload);
+			// Konfigurasi request dengan header Authorization
+			const response = await fetch(`${BASE_API_URL}/api/transactions`, {
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+					"Authorization": `Bearer ${TOKEN}`,
+				},
+				body: JSON.stringify(transactionPayload),
+			});
+
+			// Check Response
+			checkOKResponse(response)
+
+			// Ubah data ke json format
+			const data = await response.json();
+
+			console.info("Status Request Create Transaction : ", data.status);
+
+			resolve({ success: true, data });
+
+		}
+		catch (error) {
+			const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
+			console.log("Gagal menambah transaksi:", error);
+			reject("Gagal menambah transaksi: " + errorMessage);
+		}
+	});
 };
 
 export const saveData = async (newStudents: object): Promise<ApiResponse> => {

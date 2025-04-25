@@ -41,7 +41,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const handleAutoSet = (qty: number) => {
     ensureItemInCart(qty);
-    dispatch(updateQty({ id: product.id, quantity: quantity + qty }))
+    dispatch(updateQty({ id: product.id, quantity: qty }))
   }
 
   const handleRemove = () => {

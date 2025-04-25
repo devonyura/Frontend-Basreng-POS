@@ -11,14 +11,20 @@ export function rupiahFormat(value: string | number, withRp: boolean = true) {
 
 export function generateReceiptNumber(branchID: number, username: string | any): string {
   const now = new Date();
+
   const ddmmyy = `${String(now.getDate()).padStart(2, "0")}${String(
     now.getMonth() + 1
   ).padStart(2, "0")}${String(now.getFullYear()).slice(2)}`;
-  const hhii = `${String(now.getHours()).padStart(2, "0")}${String(
-    now.getMinutes()
-  ).padStart(2, "0")}`;
-  return `C${branchID}-${ddmmyy}-${hhii}-${username.toUpperCase()}`;
+
+  const hh = String(now.getHours()).padStart(2, "0");
+  const ii = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+
+  const hhiiss = `${hh}${ii}${ss}`;
+
+  return `C${branchID}-${ddmmyy}-${hhiiss}-${username.toUpperCase()}`;
 }
+
 
 export function calculateChange(cashGiven: number, total: number): number {
   if (cashGiven && cashGiven > total) {
