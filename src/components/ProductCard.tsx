@@ -55,42 +55,36 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <IonCard>
       <IonGrid>
-        <IonRow>
-          <IonCol className="img-card">
-            <img alt={product.name} src="https://ionicframework.com/docs/img/demos/card-media.png" />
-          </IonCol>
-          <IonCol size="8">
-            <IonCardHeader>
-              <IonCardTitle>{product.name}</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <div className="amount price">
-                <p>Harga: <span>{rupiahFormat(product.price)}</span></p>
-              </div>
-              <div className="amount">
-                <p>Qty:</p>
-                <IonButton shape="round" size="small" onClick={handleRemove}>
-                  <IonIcon slot="icon-only" icon={remove}></IonIcon>
-                </IonButton>
-                {quantity}
-                <IonButton shape="round" size="small" onClick={handleAdd}>
-                  <IonIcon slot="icon-only" icon={add}></IonIcon>
-                </IonButton>
-                <IonButton shape="round" size="small" color="danger" onClick={handleReset}>
-                  <IonIcon slot="icon-only" icon={trashBin}></IonIcon>
-                </IonButton>
-              </div>
-              <div className="amount">
-                <IonButton shape="round" size="small" onClick={() => handleAutoSet(3)}>3</IonButton>
-                <IonButton shape="round" size="small" onClick={() => handleAutoSet(6)}>6</IonButton>
-                <IonButton shape="round" size="small" onClick={() => handleAutoSet(12)}>12</IonButton>
-              </div>
-              <div className="amount price">
-                <p>Subtotal: <span>{rupiahFormat(subtotal)}</span></p>
-              </div>
-            </IonCardContent>
-          </IonCol>
-        </IonRow>
+
+        <IonCardHeader>
+          <IonCardTitle>{product.name}</IonCardTitle>
+        </IonCardHeader>
+        <IonCardContent>
+          <div className="amount price">
+            <p>Harga: <span>{rupiahFormat(product.price)}</span></p>
+          </div>
+          <div className="amount">
+            <p>Qty:</p>
+            <IonButton shape="round" size="small" onClick={handleRemove}>
+              <IonIcon slot="icon-only" icon={remove}></IonIcon>
+            </IonButton>
+            {quantity}
+            <IonButton shape="round" size="small" onClick={handleAdd}>
+              <IonIcon slot="icon-only" icon={add}></IonIcon>
+            </IonButton>
+            <IonButton shape="round" size="small" color="danger" onClick={handleReset}>
+              <IonIcon slot="icon-only" icon={trashBin}></IonIcon>
+            </IonButton>
+          </div>
+          <div className="amount">
+            <IonButton shape="round" size="small" onClick={() => handleAutoSet(3)}>3</IonButton>
+            <IonButton shape="round" size="small" onClick={() => handleAutoSet(6)}>6</IonButton>
+            <IonButton shape="round" size="small" onClick={() => handleAutoSet(12)}>12</IonButton>
+          </div>
+          <div className="amount price">
+            <p>Subtotal: <span>{rupiahFormat(subtotal)}</span></p>
+          </div>
+        </IonCardContent>
       </IonGrid>
     </IonCard>
   );

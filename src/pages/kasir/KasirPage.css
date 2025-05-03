@@ -13,10 +13,10 @@ ion-card-title {
   text-transform: capitalize;
 }
 
-ion-card {
+/* ion-card {
   margin: 4px;
   padding: 0 !important;
-}
+} */
 
 ion-card-header {
   padding-bottom: 8px;

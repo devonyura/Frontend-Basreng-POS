@@ -35,7 +35,31 @@ import { selectorCartTotal } from "../../redux/cartSelectors";
 import { rupiahFormat, calculateChange, generateReceiptNumber } from '../../hooks/formatting';
 import React from 'react';
 
+
 const DetailOrder: React.FC = () => {
+
+  // setup Alert
+  const [alert, setAlert] = useState<AlertState>({
+    showAlert: false,
+    header: '',
+    alertMesage: '',
+    hideButton: false,
+  });
+
+  const checkForm = (name: string, value: any) => {
+    if (value === null || !value || value === 0 || value === '0') {
+      setAlert({
+        showAlert: true,
+        header: "Peringatan",
+        alertMesage: 'Isian ' + name + " tidak boleh kosong!"
+      });
+
+      alert.showAlert = false
+      return false
+    }
+    return true
+  }
+
   const modal = useRef<HTMLIonModalElement>(null);
   const paymentModal = useRef<HTMLIonModalElement>(null);
 
@@ -99,6 +123,21 @@ const DetailOrder: React.FC = () => {
       return;
     }
 
+    if (!isCash) {
+      checkForm("Uang", cashGiven)
+      return
+    }
+    if (isOnlineOrder) {
+      if (!checkForm("Nama Pemesan", customerInfo.name)) return
+      if (!checkForm("Nomor HP Pemesan", customerInfo.phone)) return
+      if (!checkForm("Alamat Pemesan", customerInfo.address)) return
+    }
+
+
+    return
+
+
+
     const dateTimeNow = new Date();
     const formattedDateTime = dateTimeNow.toISOString().replace("T", " ").substring(0, 19); // format: yyyy-MM-dd HH:mm:ss
 
@@ -131,21 +170,6 @@ const DetailOrder: React.FC = () => {
 
     console.log("Data Transaksi Siap Dikirim:", transactionData);
 
-    // setAlert({
-    //       showAlert: true,
-    //       header: "Sedang menyimpan",
-    //       alertMesage: "Tunggu Sebentar...",
-    //       hideButton: true,
-    //     });
-
-    //     const newStudent = { name, address, gender }
-
-    // if (!checkForm("Nama", newStudent.name)) {
-    //   return
-    // }
-    // if (!checkForm("Alamat", newStudent.address)) {
-    //   return
-    // }
 
     try {
 
@@ -209,7 +233,7 @@ const DetailOrder: React.FC = () => {
           <div className="input-method">
             <IonList>
               <IonItem>
-                <IonInput label="Total Belanja:" value={rupiahFormat(total)} disabled={true}></IonInput>
+                <IonInput className="input-digit" label="Total Belanja:" value={rupiahFormat(total)} disabled={true}></IonInput>
               </IonItem>
               <IonItem>
                 <IonGrid>
@@ -253,7 +277,7 @@ const DetailOrder: React.FC = () => {
                   ))}
                 </IonItem>
                 <IonItem>
-                  <IonInput label="Kembalian:" value={rupiahFormat(change)} disabled></IonInput>
+                  <IonInput className="input-digit" label="Kembalian:" value={rupiahFormat(change)} disabled></IonInput>
                 </IonItem>
               </div>
               <IonItem>
@@ -323,7 +347,13 @@ const DetailOrder: React.FC = () => {
           </div>
         </IonModal>
       </IonModal>
-
+      <AlertInfo
+        isOpen={alert.showAlert}
+        header={alert.header}
+        message={alert.alertMesage}
+        onDidDismiss={() => setAlert(prevState => ({ ...prevState, showAlert: false }))}
+        hideButton={alert.hideButton}
+      />
     </>
   )
 };

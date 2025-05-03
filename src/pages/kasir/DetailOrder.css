@@ -109,3 +109,21 @@ ion-modal ion-label {
 .hidden-button {
   display: none;
 }
+
+/* input */
+ion-input.input-digit {
+  opacity: 1 !important;
+  --background: #0da100;
+  --color: #ffffff;
+  --placeholder-color: #ddd;
+  --placeholder-opacity: 0.8;
+  --padding-bottom: 10px;
+  --padding-end: 10px;
+  --padding-start: 10px;
+  --padding-top: 10px;
+}
+
+.amount {
+  text-transform: capitalize;
+  font-size: 1.1rem;
+}

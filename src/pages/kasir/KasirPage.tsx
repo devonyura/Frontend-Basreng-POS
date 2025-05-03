@@ -13,7 +13,7 @@ import {
   IonSegmentView,
   useIonViewWillEnter,
   IonAccordion, IonAccordionGroup, IonItem,
-  IonAlert
+  IonAlert, IonSpinner
 } from '@ionic/react';
 
 // State, History etc
@@ -33,6 +33,9 @@ import { fetchProducts } from "../../redux/productSlice";
 import { fetchCategories } from "../../redux/categorySlice";
 import { fetchSubCategories } from "../../redux/subCategorySlice";
 import { RootState, AppDispatch } from "../../redux/store"
+
+// Loading Component
+import LoadingScreen from "../../components/LoadingScreen";
 
 // styling
 import "./KasirPage.css";
@@ -74,6 +77,7 @@ const KasirPage: React.FC = () => {
     if (categories.length > 0 && !selectedCategory) {
       setSelectedCategory('1');
     }
+    console.log(isAppLoading)
 
   }, [productError, categoryError, selectedCategory])
 
@@ -86,6 +90,24 @@ const KasirPage: React.FC = () => {
   );
 
   const hasSubCategories = filteredSubCategories.length > 0;
+
+  // === Loading section
+  const [isAppLoading, setIsAppLoading] = useState(true);
+
+  useEffect(() => {
+    if (
+      products.length > 0 &&
+      categories.length > 0 &&
+      subCategories.length > 0
+    ) {
+      setIsAppLoading(false);
+    }
+  }, [products, categories, subCategories]);
+
+  if (isAppLoading) {
+    return <LoadingScreen />
+  }
+  // === Loading section
 
   return (
     <IonPage>

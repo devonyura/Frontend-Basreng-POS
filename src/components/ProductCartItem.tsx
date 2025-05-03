@@ -9,9 +9,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { addToCart, updateQty, removeFromCart } from "../redux/cartSlice";
 import { RootState } from "../redux/store";
 
-interface ProductCardProps {
-  product: DataProduct;
-}
 
 const ProductCartItem: React.FC<any> = ({ product }) => {
 
@@ -51,10 +48,7 @@ const ProductCartItem: React.FC<any> = ({ product }) => {
     <IonItem>
       <IonGrid>
         <IonRow>
-          <IonCol className='img-card'>
-            <img alt={product.name} src="https://ionicframework.com/docs/img/demos/card-media.png" />
-          </IonCol>
-          <IonCol size="7">
+          <IonCol size="9">
             <div className='amount title'>
               <b>{product.name}</b>
             </div>
@@ -72,7 +66,7 @@ const ProductCartItem: React.FC<any> = ({ product }) => {
               </IonButton>
             </div>
           </IonCol>
-          <IonCol class='col-trash'>
+          <IonCol class='col-trash' size="3">
             <IonButton shape="round" color={'danger'} size='default' onClick={handleReset}>
               <IonIcon slot="icon-only" icon={trashBin}></IonIcon>
             </IonButton>
