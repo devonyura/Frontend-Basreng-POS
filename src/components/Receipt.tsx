@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonItem, useIonViewWillEnter } from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
 import { rupiahFormat, } from "../hooks/formatting";
@@ -37,14 +37,15 @@ export interface BranchData {
   branch_address: string;
 }
 
-const Receipt: React.FC<ReceiptProps> = ({ cash, change, total, isOnlineOrders, customerInfo, cartItems, receiptNoteNumber, branchData }) => {
+const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
+  const { cash, change, total, isOnlineOrders, customerInfo, cartItems, receiptNoteNumber, branchData } = props;
 
-  const { username } = useAuth()
+  const { username } = useAuth();
 
-  const [branchDataState, setBranchDataState] = useState<BranchData | null>(branchData)
+  const [branchDataState] = useState<BranchData | null>(branchData);
 
   return (
-    <div className='receipt-container'>
+    <div className='receipt-container' ref={ref}>
       <table className="receipt">
         <thead>
           <tr className='receipt-title'>
@@ -132,6 +133,6 @@ const Receipt: React.FC<ReceiptProps> = ({ cash, change, total, isOnlineOrders, 
       </table>
     </div>
   );
-};
-
+});
+Receipt.displayName = "Receipt";
 export default Receipt;

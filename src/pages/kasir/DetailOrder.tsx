@@ -12,9 +12,9 @@ import {
   IonItemDivider, IonList, IonSelect, IonSelectOption,
   IonCheckbox, IonButtons,
   IonTextarea,
-  IonItemGroup,
+  IonItemGroup, IonAlert, IonSpinner
 } from '@ionic/react';
-import { cart } from 'ionicons/icons';
+import { cart, cellular, flashOutline, receipt } from 'ionicons/icons';
 
 import { useState, useEffect, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -27,16 +27,22 @@ import qrcode from "../../../public/img/qr/images.png"
 import Receipt, { BranchData } from "../../components/Receipt";
 
 // Redux
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from '../../redux/store';
 import ProductCartItem from '../../components/ProductCartItem';
 import { selectorCartTotal } from "../../redux/cartSelectors";
+import { clearCart } from "../../redux/cartSlice";
 
 import { rupiahFormat, calculateChange, generateReceiptNumber } from '../../hooks/formatting';
 import React from 'react';
 
+// save struk
+import html2canvas from 'html2canvas';
 
 const DetailOrder: React.FC = () => {
+
+  // untuk reset Cart
+  const dispatch = useDispatch();
 
   // setup Alert
   const [alert, setAlert] = useState<AlertState>({
@@ -82,7 +88,8 @@ const DetailOrder: React.FC = () => {
   let change = calculateChange(Number(cashGiven), total)
 
   const { username, branchID, idUser } = useAuth()
-  const receiptNoteNumber = generateReceiptNumber(Number(branchID), username)
+  const [receiptNoteNumber, setReceiptNoteNumber] = useState<null | string>(null)
+  // const receiptNoteNumber = generateReceiptNumber(Number(branchID), username)
   const buttonColorCash = ["success", "warning", "secondary", "danger"]
 
   useEffect(() => {
@@ -95,13 +102,20 @@ const DetailOrder: React.FC = () => {
 
   }, [isCash])
 
-
-  function onWillDismiss(event: CustomEvent<OverlayEventDetail>) {
-
-  }
+  // Menganggap cash 0 jika uang kurang dari total bayar
+  useEffect(() => {
+    if (cashGiven) {
+      console.info("Cash:", cashGiven - total)
+      if (cashGiven - total < 0) {
+        setCashGiven(null)
+      }
+      // const change = (cashGiven - total) < 0 ? null 
+    }
+  }, [cashGiven])
 
   const [branchDataState, setBranchDataState] = useState<BranchData | null>(null)
 
+  // Load data cabang
   useEffect(() => {
 
     const fetchBranch = async () => {
@@ -117,16 +131,22 @@ const DetailOrder: React.FC = () => {
     fetchBranch()
   }, [])
 
+
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false)
+  const [shareFile, setShareFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alertBeforeSubmit, setAlertBeforeSubmit] = useState(false);
+
   const handleSubmitTransaction = async () => {
+    setReceiptNoteNumber(generateReceiptNumber(Number(branchID), username))
+
     if (!branchDataState) {
       console.warn("Branch belum dimuat.");
+      setIsSubmitting(false);
       return;
     }
 
-    if (!isCash) {
-      checkForm("Uang", cashGiven)
-      return
-    }
     if (isOnlineOrder) {
       if (!checkForm("Nama Pemesan", customerInfo.name)) return
       if (!checkForm("Nomor HP Pemesan", customerInfo.phone)) return
@@ -134,7 +154,19 @@ const DetailOrder: React.FC = () => {
     }
 
 
-    return
+    // if (showSuccessAlert) {
+    //   setPaymentMethod("cash")
+    //   setIsCash(false)
+    //   setCashGiven(null)
+    //   setCustomerInfo({
+    //     name: '',
+    //     phone: '',
+    //     address: '',
+    //     notes: '',
+    //   })
+    //   // setShareFile(null)
+    //   // setIsSubmitting(false)
+    // }
 
 
 
@@ -185,6 +217,7 @@ const DetailOrder: React.FC = () => {
 
         // history.push('/student-list')
         console.log("Transaksi Berhasil Dicatat!", result)
+        setShowSuccessAlert(true);
       } else {
         // setAlert({
         //   showAlert: true,
@@ -193,6 +226,7 @@ const DetailOrder: React.FC = () => {
         // });
         console.log("Transaksi Gagal Dicatat: ", result)
       }
+
 
     } catch (error: any) {
       console.log("Transaksi Gagal Dicatat: ", error)
@@ -204,7 +238,98 @@ const DetailOrder: React.FC = () => {
     }
   }
 
+  //======================================================================= Share Struk
 
+  const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false)
+  const handleShareReceipt = async () => {
+    // setIsSubmitting(true)
+    await new Promise(resolve => setTimeout(resolve, 0)); // 🔁 biarkan render terjadi
+
+    // if (receiptRef.current) {
+    //   (async () => {
+    //     if (!receiptRef.current) {
+    //       console.error("Referensi Html Sruk belum ada!")
+    //       return
+    //     }
+
+    //     try {
+    //       const canvas = await html2canvas(receiptRef.current)
+    //       const dataUrl = canvas.toDataURL('image/png')
+    //       const blob = await (await fetch(dataUrl)).blob()
+    //       const file = new File([blob], `${receiptNoteNumber}.png`, { type: "image/png" })
+    //       setShareFile(file) // Simpan untuk diunduh nanti
+    //     } catch (err) {
+    //       console.error("gagal generate struk", err)
+    //     }
+    //     setIsSubmitting(false)
+    //   })();
+    // }
+
+    // if (!shareFile) return;
+    if (!receiptRef.current) {
+      console.error("Referensi Html Struk belum ada!");
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(receiptRef.current);
+      const dataUrl = canvas.toDataURL('image/png');
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `${receiptNoteNumber}.png`, { type: "image/png" });
+      setShareFile(file);
+    } catch (err) {
+      console.error("Gagal generate struk:", err);
+    }
+
+  };
+
+  // ======================================================================= Share Struk End
+
+  // ======================================================================= Reset Input
+  const resetInput = () => {
+    setShowSuccessAlert(false)
+
+    // reset semua state setelah alert ditutup
+    setPaymentMethod("cash");
+    setIsCash(false);
+    setCashGiven(null);
+    setCustomerInfo({
+      name: "",
+      phone: "",
+      address: "",
+      notes: "",
+    });
+    // setShareFile(null);
+    setIsSubmitting(false);
+
+    dispatch(clearCart())
+
+    // tutup modal detail order
+    modal.current?.dismiss();
+  }
+  // ======================================================================= Reset Input End
+
+
+  // === Online Order copy paste 
+  const copyCustomerInfoToClipboard = () => {
+    const { name, phone, address, notes } = customerInfo;
+
+    const infoText =
+      ` Nama: ${name}\nNomor HP: ${phone}\nAlamat: ${address}\nCatatan: ${notes || '-'}`
+
+    navigator.clipboard.writeText(infoText)
+      .then(() => {
+        setAlert({
+          showAlert: true,
+          header: "Tersalin!",
+          alertMesage: "Info Pemesan telah disalin! Silakan buka Maxim dan tempel pada Perincian pesanan."
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal menyalin:", err);
+      });
+  };
+  // === Online Order copy paste End
 
   return (
     <>
@@ -212,15 +337,15 @@ const DetailOrder: React.FC = () => {
         {(cartItems.length !== 0) && (
           <IonBadge color="danger">{cartItems.length}</IonBadge>
         )}
-        <IonFabButton id='open-detail-order'>
+        <IonFabButton id='open-detail-order' onClick={() => (cartItems.length === 0) ? modal.current?.dismiss() : ""}>
           <IonIcon icon={cart} />
         </IonFabButton>
       </IonFab>
-      <IonModal ref={modal} trigger="open-detail-order" onWillDismiss={(event) => onWillDismiss(event)}>
+      <IonModal ref={modal} trigger="open-detail-order">
         <IonHeader>
           <IonToolbar>
             <IonButtons slot="start">
-              <IonButton onClick={() => modal.current?.dismiss()}>Kembali</IonButton>
+              <IonButton onClick={() => resetInput()}>Kembali</IonButton>
             </IonButtons>
             <IonTitle>Detail Order</IonTitle>
           </IonToolbar>
@@ -273,7 +398,7 @@ const DetailOrder: React.FC = () => {
                 </IonItem>
                 <IonItem>
                   {[20000, 30000, 50000, 100000].map((nominal, key) => (
-                    <IonButton key={nominal} color={buttonColorCash[key]} size='small' onClick={() => setCashGiven(nominal)}>{rupiahFormat(nominal)}</IonButton>
+                    <IonButton key={nominal} color={buttonColorCash[key]} size='small' onClick={() => setCashGiven(nominal)}>{rupiahFormat(nominal, false)}</IonButton>
                   ))}
                 </IonItem>
                 <IonItem>
@@ -281,7 +406,13 @@ const DetailOrder: React.FC = () => {
                 </IonItem>
               </div>
               <IonItem>
-                <IonCheckbox id='online-check' checked={isOnlineOrder} onIonChange={(e) => setIsOnlineOrder(e.detail.checked)}>Pesanan Online?</IonCheckbox>
+                <IonCheckbox
+                  id='online-check'
+                  checked={isOnlineOrder}
+                  onIonChange={(e) => setIsOnlineOrder(e.detail.checked)}
+                >
+                  Pesanan Online?
+                </IonCheckbox>
               </IonItem>
               <IonItemGroup className={!isOnlineOrder ? "hidden-button" : ''}>
                 <IonItemDivider>
@@ -300,24 +431,28 @@ const DetailOrder: React.FC = () => {
                   <IonTextarea name='notes' placeholder='Catatan: contoh: Pesanan dibayar 50K' autoGrow={true} value={customerInfo.notes} onIonChange={(e) => setCustomerInfo({ ...customerInfo, notes: e.detail.value! })}></IonTextarea>
                 </IonItem>
                 <IonItem className='button-wrapper'>
-                  <IonButton expand='block' size='small' color={'dark'}>Salin Info Pemesan (Untuk Order Maxim)</IonButton>
+                  <IonButton expand='block' size='small' color={'dark'} onClick={copyCustomerInfoToClipboard}>Salin Info Pemesan (Untuk Order Maxim)</IonButton>
                 </IonItem>
               </IonItemGroup>
             </IonList>
           </div>
           <Receipt
+            ref={receiptRef}
             cash={Number(cashGiven)}
             change={change}
             total={total}
             isOnlineOrders={isOnlineOrder}
             customerInfo={customerInfo}
             cartItems={cartItems}
-            receiptNoteNumber={receiptNoteNumber}
+            receiptNoteNumber={receiptNoteNumber || '0'}
             branchData={branchDataState}
           >
 
           </Receipt>
-          <IonButton expand="block" className='btn-checkout' color="success" onClick={handleSubmitTransaction}>Selesaikan Transaksi</IonButton>
+          <IonButton expand="block" onClick={() => setAlertBeforeSubmit(true)} disabled={isSubmitting || cashGiven === null || cashGiven === 0}>
+            Selesaikan Transaksi
+          </IonButton>
+          {/* <IonButton expand="block" className='btn-checkout' color="success" onClick={handleSubmitTransaction}>Selesaikan Transaksi</IonButton> */}
           <div className='space'></div>
         </IonContent>
         <IonModal
@@ -353,6 +488,114 @@ const DetailOrder: React.FC = () => {
         message={alert.alertMesage}
         onDidDismiss={() => setAlert(prevState => ({ ...prevState, showAlert: false }))}
         hideButton={alert.hideButton}
+      />
+      <IonAlert
+        isOpen={showSuccessAlert}
+        onDidDismiss={() => { }}
+        header="Transaksi Berhasil!"
+        message={
+          "Transaksi berhasil dicatat."
+        }
+        buttons={[
+          {
+            text: "Kembali",
+            role: "cancel",
+            handler: () => {
+              resetInput()
+            }
+          },
+          {
+            text: isSubmitting ? "Tunggu..." : "Kirim Struk",
+            handler: async () => {
+              setIsSubmitting(true);
+              await new Promise(resolve => setTimeout(resolve, 0)); // 🔁 biarkan render terjadi
+
+              if (!receiptRef.current) {
+                console.error("Receipt belum tersedia.");
+                return;
+              }
+
+              // Jika belum ada file, generate dulu
+              if (!shareFile) {
+
+
+                try {
+                  const canvas = await html2canvas(receiptRef.current);
+                  const dataUrl = canvas.toDataURL('image/png');
+                  const blob = await (await fetch(dataUrl)).blob();
+                  const file = new File([blob], `${receiptNoteNumber}.png`, { type: "image/png" });
+                  setShareFile(file); // simpan di state
+
+                  // lanjut share
+                  if (navigator.share) {
+                    await navigator.share({
+                      title: 'Struk Pesanan',
+                      text: 'Berikut adalah struk pemesanan Anda.',
+                      files: [file],
+                    });
+                  } else {
+                    // fallback download
+                    const url = URL.createObjectURL(file);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${receiptNoteNumber}.png`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                  }
+                } catch (err) {
+                  console.error("Gagal membagikan struk:", err);
+                } finally {
+                  setIsSubmitting(false);
+                }
+              } else {
+                // Jika file sudah ada (klik kedua, dll)
+                if (navigator.share) {
+                  try {
+                    await navigator.share({
+                      title: 'Struk Pesanan',
+                      text: 'Berikut adalah struk pemesanan Anda.',
+                      files: [shareFile],
+                    });
+                  } catch (err) {
+                    console.error("Gagal berbagi struk:", err);
+                  }
+                } else {
+                  const url = URL.createObjectURL(shareFile);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `${receiptNoteNumber}.png`;
+                  link.click();
+                  URL.revokeObjectURL(url);
+                }
+                setShareFile(null);
+                // setIsSubmitting(false)
+                // modal.current?.dismiss()
+              }
+            },
+          },
+        ]}
+      />
+      <IonAlert
+        isOpen={alertBeforeSubmit}
+        onDidDismiss={() => { }}
+        header="Yakin?"
+        message={
+          "Yakin Item Sudah Sesuai?"
+        }
+        buttons={[
+          {
+            text: "Tidak",
+            role: "cancel",
+            handler: () => { setAlertBeforeSubmit(false) }
+          },
+          {
+            text: "Ya",
+            handler: () => {
+              setAlertBeforeSubmit(false)
+              handleSubmitTransaction()
+            }
+          },
+        ]}
       />
     </>
   )
