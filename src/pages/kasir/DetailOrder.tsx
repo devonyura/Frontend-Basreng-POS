@@ -137,6 +137,7 @@ const DetailOrder: React.FC = () => {
   const [shareFile, setShareFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertBeforeSubmit, setAlertBeforeSubmit] = useState(false);
+  const [isResetButton, setIsResetButton] = useState(false);
 
   const handleSubmitTransaction = async () => {
     setReceiptNoteNumber(generateReceiptNumber(Number(branchID), username))
@@ -345,7 +346,10 @@ const DetailOrder: React.FC = () => {
         <IonHeader>
           <IonToolbar>
             <IonButtons slot="start">
-              <IonButton onClick={() => resetInput()}>Kembali</IonButton>
+              <IonButton onClick={() => {
+                setAlertBeforeSubmit(true)
+                setIsResetButton(true)
+              }}>Kembali</IonButton>
             </IonButtons>
             <IonTitle>Detail Order</IonTitle>
           </IonToolbar>
@@ -580,19 +584,27 @@ const DetailOrder: React.FC = () => {
         onDidDismiss={() => { }}
         header="Yakin?"
         message={
-          "Yakin Item Sudah Sesuai?"
+          (isResetButton) ? "Jika kembali, isi keranjang dihapus" : "Yakin Item Sudah Sesuai?"
         }
         buttons={[
           {
             text: "Tidak",
             role: "cancel",
-            handler: () => { setAlertBeforeSubmit(false) }
+            handler: () => {
+              setAlertBeforeSubmit(false)
+              setIsResetButton(false)
+            }
           },
           {
             text: "Ya",
             handler: () => {
+              if (isResetButton) {
+                resetInput()
+                setIsResetButton(false)
+              } else {
+                handleSubmitTransaction()
+              }
               setAlertBeforeSubmit(false)
-              handleSubmitTransaction()
             }
           },
         ]}
