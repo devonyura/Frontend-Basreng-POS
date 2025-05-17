@@ -21,24 +21,52 @@ import {
   IonModal,
   IonItemSliding,
   IonItemOption,
-  IonItemOptions
+  IonItemOptions,
+  useIonViewWillEnter, IonAlert
 } from '@ionic/react';
-import { add, remove, trashBin, arrowDownCircleOutline, information, informationCircleOutline, informationCircle } from 'ionicons/icons';
+import { time, people, location } from 'ionicons/icons';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-// import { loginRequest } from '../../hooks/restAPIRequest';
+import { getTransactionHistory, findTransactionHistory } from '../../hooks/restAPIRequest';
 // import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./TransactionHistory.css";
+import { rupiahFormat, shortDate } from '../../hooks/formatting';
+import Receipt from '../../components/Receipt';
 
-interface LocationState {
-  isTokenExpired?: boolean;
-  dontRefresh?: boolean;
-}
+import dayjs from 'dayjs';
+import TransactionHistoryDetail from '../kasir/TransactionHistoryDetail';
+
+
+
 
 const TransactionHistory: React.FC = () => {
   const modalDetail = useRef<HTMLIonModalElement>(null);
+  const [kasirUsername, setKasirUsername] = useState<{ id: string | number, name: string }>({ id: '', name: 'Semua Kasir' });
+  const [selectedBranch, setSelectedBranch] = useState<{ id: string | number, name: string }>({ id: '', name: 'Semua Cabang' });
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>("today");
+
+  const [showKasirAlert, setShowKasirAlert] = useState(false);
+  const [showBranchAlert, setShowBranchAlert] = useState(false);
+  const [showDateFilterAlert, setShowDateFilterAlert] = useState(false);
+
+  const [transactionsHistory, setTransactionsHistory] = useState<any[]>([])
+  const [selectedTransactionCode, setSelectedTransactionCode] = useState<string | null>(null)
+
+  const branches = [
+    { id: '', name: "Semua Cabang" },
+    { id: 1, name: "Masjid Raya" },
+    { id: 2, name: "Veteran" }
+  ];
+
+  const kasirs = [
+    { id: '', name: "Semua Kasir" },
+    { id: 1, name: "ila" },
+    { id: 2, name: "admin" },
+    { id: 3, name: "kasir" }
+  ];
+
 
   // setup Alert
   const [alert, setAlert] = useState<AlertState>({
@@ -48,14 +76,62 @@ const TransactionHistory: React.FC = () => {
     hideButton: false,
   });
 
-  // const { login, token, role } = useAuth();
-  const history = useHistory();
-  const location = useLocation<LocationState>();
-  const [isTokenExpired, setIsTokenExpired] = useState(location.state?.isTokenExpired || false);
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
 
+  const LoadData = async () => {
+    try {
+      let startDate: string | undefined;
+      let endDate: string = dayjs().format("YYYY-MM-DD");
+
+      if (!isNaN(Number(selectedDateFilter))) {
+        // N hari ke belakang
+        startDate = dayjs().subtract(Number(selectedDateFilter), "day").format("YYYY-MM-DD");
+      } else if (/^\w{3}-\d{4}$/.test(selectedDateFilter)) {
+        const [monthStr, yearStr] = selectedDateFilter.split("-");
+        const monthIndex = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(monthStr.toLowerCase());
+        if (monthIndex >= 0) {
+          startDate = dayjs(`${yearStr}-${monthIndex + 1}-01`).startOf('month').format("YYYY-MM-DD");
+          endDate = dayjs(startDate).endOf('month').format("YYYY-MM-DD");
+        }
+      } else if (selectedDateFilter === "today") {
+        startDate = "today";
+      }
+
+      const result = await getTransactionHistory({
+        username: kasirUsername.name === "Semua Kasir" ? "" : kasirUsername.name,
+        branch: selectedBranch.id ? parseInt(String(selectedBranch.id)) : undefined,
+        start_date: startDate,
+        end_date: endDate,
+      });
+      setTransactionsHistory(result);
+    } catch (err) {
+      console.error("Gagal memuat riwayat transaksi", err);
+    }
+  };
+
+  useIonViewWillEnter(() => {
+    LoadData();
+    getTransactionDetail();
+  })
+
+  const getTransactionDetail = async () => {
+    const TransactionDetails = await findTransactionHistory('C1-070525-140316-ADMIN')
+    console.log(TransactionDetails)
+  }
+
+  useEffect(() => {
+    LoadData();
+  }, [kasirUsername, selectedBranch, selectedDateFilter])
+
+  const getDateFilterLabel = (filter: string): string => {
+    if (filter === "today") return "Hari Ini";
+    if (!isNaN(Number(filter))) return `${filter} Hari Terakhir`;
+    if (/^\w{3}-\d{4}$/.test(filter)) {
+      const [month, year] = filter.split("-");
+      return `${month.toUpperCase()} ${year}`;
+    }
+    return "Filter Tanggal";
+  };
 
   return (
     <IonPage>
@@ -69,129 +145,148 @@ const TransactionHistory: React.FC = () => {
           <IonSearchbar placeholder='Cari Transaksi'></IonSearchbar>
         </IonToolbar>
         <IonToolbar className='filter-container'>
-          <IonButton size='small' color="medium">
-            {/* <IonIcon icon={arrowDownCircleOutline} slot='end'></IonIcon> */}
-            Urutkan dari : <span>Terbaru</span>
+          <IonButton size='small' color="medium" onClick={() => setShowDateFilterAlert(true)}>
+            <IonIcon icon={time} size='small' />
+            <span> {getDateFilterLabel(selectedDateFilter)}</span>
           </IonButton>
-          <IonButton size='small' color="medium">
-            {/* <IonIcon icon={arrowDownCircleOutline} slot='end'></IonIcon> */}
-            Waktu : <span>1-12 Maret 2025</span>
+          <IonButton size='small' color="medium" onClick={() => setShowKasirAlert(true)}>
+            Kasir : {kasirUsername.name}
+          </IonButton>
+          <IonButton size='small' color="medium" onClick={() => setShowBranchAlert(true)}>
+            <IonIcon icon={location} size='small' /> : {selectedBranch.name}
           </IonButton>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
         <IonList>
-          <IonItemSliding>
+          {transactionsHistory.length > 0 ? (
+            transactionsHistory.map((item, index) => (
+              // <IonItemSliding key={index}>
+              <IonItem key={index} onClick={() => setSelectedTransactionCode(item.transaction_code)}>
+                <IonLabel color='medium'>
+                  <span>{shortDate(item.date)} </span>
+                  Jam: <span>{item.time}</span> | <span>
+                    {rupiahFormat(item.total_price)}
+                  </span>
+                </IonLabel>
+              </IonItem>
+            ))
+          ) : (
             <IonItem>
-              <IonLabel color='medium'><span>1.</span> Hari ini pukul 10:15 | Total: Rp.12.000 </IonLabel>
-              {/* <IonButton  color="secondary">Rincian</IonButton> */}
+              <IonLabel>Tidak ada transaksis.</IonLabel>
             </IonItem>
-            <IonItemOptions>
-              <IonItemOption id="open-detail-transaction" color="secondary">
-                <IonIcon slot='start' icon={informationCircle}></IonIcon>
-                Rincian
-              </IonItemOption>
-            </IonItemOptions>
-          </IonItemSliding>
+          )}
 
         </IonList>
         <IonModal ref={modalDetail} trigger="open-detail-transaction" initialBreakpoint={1} breakpoints={[0, 1]}>
-          <div className='receipt-container'>
-            <table className="receipt">
-              <thead>
-                <tr className='receipt-title'>
-                  <th colSpan={3}>- Basreng Ghosting Palu -</th>
-                </tr>
-                <tr>
-                  <th colSpan={3}><span></span></th>
-                </tr>
-                <tr>
-                  <th colSpan={2}>NO: CA01.03.25.10.15.12</th>
-                  <th>
-                    Kasir: Dina
-                  </th>
-                </tr>
-                <tr>
-                  <th colSpan={3}><span></span></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Mochi All Variant</td>
-                  <td>10x</td>
-                  <td>Rp.25.000</td>
-                </tr>
-                <tr>
-                  <td>Basreng 75g</td>
-                  <td>2x</td>
-                  <td>Rp.20.000</td>
-                </tr>
-                <tr>
-                  <td>Total Item</td>
-                  <td>x12</td>
-                  <td>Rp.45.000</td>
-                </tr>
-                <tr>
-                  <td colSpan={2}>Tunai</td>
-                  <td>Rp.100.000</td>
-                </tr>
-                <tr>
-                  <td colSpan={2}>Kembalian</td>
-                  <td>Rp.55.000</td>
-                </tr>
-                <tr className='online-order-receipt tr-title'>
-                  <td colSpan={2} className='tr-title'>Pemesan</td>
-                  <td>Auliya</td>
-                </tr>
-                <tr>
-                  <td colSpan={2} className='tr-title'>No WA/HP</td>
-                  <td>085757063969</td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className='text-left tr-title'>ALamat:</td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className='text-left'>Jl. Nuri no.19 (Depan masjid at-takwa)</td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className='text-left tr-title'>Catatan Tambahan:</td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className='text-left'>Pesanan Dibayar 50K</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={2}>Tgl. 28-10-2025</td>
-                  <td>Ver.1.0.0</td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className='info'>
-                    <p>- Basreng Ghosting Palu -</p>
-                    <p>- Berbagai cemilan pedas, mochi & sushi -</p>
-                    <p>- Jl.Masjid Raya (depan Masjid) -</p>
-                    <p>- Jl.Veteran (dekat ....) -</p>
-                    <p>Selamat Menikmati :) </p>
-                    <p>PESANAN SUDAH DISTRUK TIDAK DAPAT DIUBAH</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan={3}>
-                    <p><i>App by Devon Yura Software House</i></p>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+          <h1>Detail Transaksi</h1>
         </IonModal>
       </IonContent>
-
-      <AlertInfo
-        isOpen={alert.showAlert}
-        header={alert.header}
-        message={alert.alertMesage}
-        onDidDismiss={() => setAlert(prevState => ({ ...prevState, showAlert: false }))}
-        hideButton={alert.hideButton}
+      <TransactionHistoryDetail
+        transactionCode={selectedTransactionCode}
+        isOpen={!!selectedTransactionCode}
+        onDidDismiss={() => setSelectedTransactionCode(null)}
+      />
+      <IonAlert
+        isOpen={showKasirAlert}
+        onDidDismiss={() => setShowKasirAlert(false)}
+        header="Pilih Kasir"
+        buttons={[
+          {
+            text: "Batal",
+            role: "cancel"
+          },
+          {
+            text: "Pilih",
+            handler: (selectedName: string) => {
+              const kasir = kasirs.find(k => k.name === selectedName);
+              if (kasir) {
+                setKasirUsername(kasir);
+              }
+            }
+          }
+        ]}
+        inputs={kasirs.map(kasir => ({
+          label: kasir.name,
+          type: 'radio',
+          value: kasir.name,
+          checked: kasir.name === kasirUsername.name
+        }))}
+      />
+      <IonAlert
+        isOpen={showBranchAlert}
+        onDidDismiss={() => setShowBranchAlert(false)}
+        header="Pilih Cabang"
+        buttons={[
+          {
+            text: "Batal",
+            role: "cancel"
+          },
+          {
+            text: "Pilih",
+            handler: (selectedId: string) => {
+              const cabang = branches.find(b => b.id === selectedId);
+              if (cabang) {
+                setSelectedBranch(cabang);
+              }
+            }
+          }
+        ]}
+        inputs={branches.map(branch => ({
+          label: branch.name,
+          type: 'radio',
+          value: branch.id,
+          checked: branch.id === selectedBranch.id
+        }))}
+      />
+      <IonAlert
+        isOpen={showDateFilterAlert}
+        onDidDismiss={() => setShowDateFilterAlert(false)}
+        header="Filter Tanggal"
+        inputs={[
+          {
+            label: "Hari Ini",
+            type: "radio",
+            value: "today",
+            checked: selectedDateFilter === "today",
+          },
+          {
+            label: "7 Hari Terakhir",
+            type: "radio",
+            value: "7",
+            checked: selectedDateFilter === "7",
+          },
+          {
+            label: "10 Hari Terakhir",
+            type: "radio",
+            value: "10",
+            checked: selectedDateFilter === "10",
+          },
+          {
+            label: "Jan 2024",
+            type: "radio",
+            value: "jan-2024",
+            checked: selectedDateFilter === "jan-2024",
+          },
+          {
+            label: "Mar 2025",
+            type: "radio",
+            value: "mar-2025",
+            checked: selectedDateFilter === "mar-2025",
+          },
+        ]}
+        buttons={[
+          {
+            text: "Batal",
+            role: "cancel",
+          },
+          {
+            text: "Pilih",
+            handler: (selectedValue: string) => {
+              setSelectedDateFilter(selectedValue);
+            },
+          },
+        ]}
       />
     </IonPage>
   )

@@ -155,21 +155,6 @@ const DetailOrder: React.FC = () => {
     }
 
 
-    // if (showSuccessAlert) {
-    //   setPaymentMethod("cash")
-    //   setIsCash(false)
-    //   setCashGiven(null)
-    //   setCustomerInfo({
-    //     name: '',
-    //     phone: '',
-    //     address: '',
-    //     notes: '',
-    //   })
-    //   // setShareFile(null)
-    //   // setIsSubmitting(false)
-    // }
-
-
 
     const dateTimeNow = new Date();
     const formattedDateTime = dateTimeNow.toISOString().replace("T", " ").substring(0, 19); // format: yyyy-MM-dd HH:mm:ss
@@ -238,53 +223,6 @@ const DetailOrder: React.FC = () => {
       // });
     }
   }
-
-  //======================================================================= Share Struk
-
-  const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false)
-  const handleShareReceipt = async () => {
-    // setIsSubmitting(true)
-    await new Promise(resolve => setTimeout(resolve, 0)); // 🔁 biarkan render terjadi
-
-    // if (receiptRef.current) {
-    //   (async () => {
-    //     if (!receiptRef.current) {
-    //       console.error("Referensi Html Sruk belum ada!")
-    //       return
-    //     }
-
-    //     try {
-    //       const canvas = await html2canvas(receiptRef.current)
-    //       const dataUrl = canvas.toDataURL('image/png')
-    //       const blob = await (await fetch(dataUrl)).blob()
-    //       const file = new File([blob], `${receiptNoteNumber}.png`, { type: "image/png" })
-    //       setShareFile(file) // Simpan untuk diunduh nanti
-    //     } catch (err) {
-    //       console.error("gagal generate struk", err)
-    //     }
-    //     setIsSubmitting(false)
-    //   })();
-    // }
-
-    // if (!shareFile) return;
-    if (!receiptRef.current) {
-      console.error("Referensi Html Struk belum ada!");
-      return;
-    }
-
-    try {
-      const canvas = await html2canvas(receiptRef.current);
-      const dataUrl = canvas.toDataURL('image/png');
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], `${receiptNoteNumber}.png`, { type: "image/png" });
-      setShareFile(file);
-    } catch (err) {
-      console.error("Gagal generate struk:", err);
-    }
-
-  };
-
-  // ======================================================================= Share Struk End
 
   // ======================================================================= Reset Input
   const resetInput = () => {
@@ -449,7 +387,6 @@ const DetailOrder: React.FC = () => {
             customerInfo={customerInfo}
             cartItems={cartItems}
             receiptNoteNumber={receiptNoteNumber || '0'}
-            branchData={branchDataState}
           >
 
           </Receipt>
@@ -507,75 +444,6 @@ const DetailOrder: React.FC = () => {
             handler: () => {
               resetInput()
             }
-          },
-          {
-            text: isSubmitting ? "Tunggu..." : "Kirim Struk",
-            handler: async () => {
-              setIsSubmitting(true);
-              await new Promise(resolve => setTimeout(resolve, 0)); // 🔁 biarkan render terjadi
-
-              if (!receiptRef.current) {
-                console.error("Receipt belum tersedia.");
-                return;
-              }
-
-              // Jika belum ada file, generate dulu
-              if (!shareFile) {
-
-
-                try {
-                  const canvas = await html2canvas(receiptRef.current);
-                  const dataUrl = canvas.toDataURL('image/png');
-                  const blob = await (await fetch(dataUrl)).blob();
-                  const file = new File([blob], `${receiptNoteNumber}.png`, { type: "image/png" });
-                  setShareFile(file); // simpan di state
-
-                  // lanjut share
-                  if (navigator.share) {
-                    await navigator.share({
-                      title: 'Struk Pesanan',
-                      text: 'Berikut adalah struk pemesanan Anda.',
-                      files: [file],
-                    });
-                  } else {
-                    // fallback download
-                    const url = URL.createObjectURL(file);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `${receiptNoteNumber}.png`;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                  }
-                } catch (err) {
-                  console.error("Gagal membagikan struk:", err);
-                } finally {
-                  setIsSubmitting(false);
-                }
-              } else {
-                // Jika file sudah ada (klik kedua, dll)
-                if (navigator.share) {
-                  try {
-                    await navigator.share({
-                      title: 'Struk Pesanan',
-                      text: 'Berikut adalah struk pemesanan Anda.',
-                      files: [shareFile],
-                    });
-                  } catch (err) {
-                    console.error("Gagal berbagi struk:", err);
-                  }
-                } else {
-                  const url = URL.createObjectURL(shareFile);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = `${receiptNoteNumber}.png`;
-                  link.click();
-                  URL.revokeObjectURL(url);
-                }
-                setShareFile(null);
-                // setIsSubmitting(false)
-                // modal.current?.dismiss()
-              }
-            },
           },
         ]}
       />

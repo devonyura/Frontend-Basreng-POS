@@ -32,3 +32,16 @@ export function calculateChange(cashGiven: number, total: number): number {
   }
   return 0;
 };
+
+export const shortDate = (tanggalString: string): string => {
+  const bulanPendek = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+  const date = new Date(tanggalString);
+  if (isNaN(date.getTime())) return "-"; // jika string tidak valid
+
+  const hari = date.getDate();
+  const bulan = bulanPendek[date.getMonth()];
+  const tahun = date.getFullYear().toString().slice(-2); // ambil 2 digit terakhir
+
+  return `${hari} ${bulan} ${tahun}`;
+};

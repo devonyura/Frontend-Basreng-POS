@@ -26,8 +26,8 @@ interface ReceiptProps {
     price: number;
     quantity: number;
   }[];
-  receiptNoteNumber: string;
-  branchData: BranchData | null;
+  receiptNoteNumber: string | null;
+  // branchData: BranchData | null;
 }
 
 
@@ -38,11 +38,11 @@ export interface BranchData {
 }
 
 const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
-  const { cash, change, total, isOnlineOrders, customerInfo, cartItems, receiptNoteNumber, branchData } = props;
+  const { cash, change, total, isOnlineOrders, customerInfo, cartItems, receiptNoteNumber } = props;
 
   const { username } = useAuth();
 
-  const [branchDataState] = useState<BranchData | null>(branchData);
+  // const [branchDataState] = useState<BranchData | null>(branchData);
 
   return (
     <div className='receipt-container' ref={ref}>
@@ -119,7 +119,7 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
             <td colSpan={4} className='info'>
               <p>- Basreng Ghosting Palu -</p>
               <p>- Berbagai cemilan pedas, mochi & sushi -</p>
-              <p>- {branchDataState?.branch_address} -</p>
+              <p>- Jalan Contoh -</p>
               <p>Selamat Menikmati :) </p>
               <p>PESANAN SUDAH DISTRUK TIDAK DAPAT DIUBAH</p>
             </td>

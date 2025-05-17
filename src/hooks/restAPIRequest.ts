@@ -343,6 +343,96 @@ export const getBranch = async (id: number | null = null) => {
 	}
 };
 
+interface TransactionFilter {
+	username?: string;
+	branch?: number;
+	start_date?: string; // format ISO string (contoh: "2024-05-14")
+	end_date?: string;
+}
+
+export const getTransactionHistory = async (filter: TransactionFilter = {}) => {
+	try {
+		// Ambil token JWT dari localStorage
+		const TOKEN = Cookies.get("token");
+
+		// Cek apakah API online
+		const apiOnline = await isApiOnline();
+		if (!apiOnline) {
+			throw new Error("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+		}
+
+		// bangun query string berdasarkan filter
+		const queryParams = new URLSearchParams();
+		if (filter.username) queryParams.append("username", filter.username);
+		if (filter.branch) queryParams.append("branch", String(filter.branch));
+		if (filter.start_date) queryParams.append("start_date", filter.start_date);
+		if (filter.end_date) queryParams.append("end_date", filter.end_date);
+
+		const queryString = queryParams.toString();
+		const url = `${BASE_API_URL}/api/transactions${queryString ? `?${queryString}` : ""}`;
+
+		// Konfigurasi request dengan header Authorization
+		const response = await fetch(url, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${TOKEN}`,
+			},
+		});
+
+		// Check Response
+		checkOKResponse(response);
+
+		// Ubah data ke json format
+		const data = await response.json();
+
+		return data.data;
+
+	} catch (error) {
+		console.error("Error Fetching transactions", error);
+		return error;
+	}
+};
+
+export const findTransactionHistory = async (transactionCode: string) => {
+	try {
+		// Ambil token JWT dari localStorage
+		const TOKEN = Cookies.get("token");
+
+		// Cek apakah API online
+		const apiOnline = await isApiOnline();
+		if (!apiOnline) {
+			throw new Error("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+		}
+
+
+		const url = `${BASE_API_URL}/api/transactions/${transactionCode}`;
+
+		// Konfigurasi request dengan header Authorization
+		const response = await fetch(url, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${TOKEN}`,
+			},
+		});
+
+		// Check Response
+		checkOKResponse(response);
+
+		// Ubah data ke json format
+		const data = await response.json();
+
+		return data.data;
+
+	} catch (error) {
+		console.error("Error Fetching transactions", error);
+		return error;
+	}
+};
+
 export const createTransaction = async (transactionPayload: TransactionPayload): Promise<ApiResponse> => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -356,37 +446,6 @@ export const createTransaction = async (transactionPayload: TransactionPayload):
 				return;
 			}
 
-			let trasactionDummy = {
-				"transaction": {
-					"transaction_code": "CB1-100425-1045-ILA",
-					"user_id": 1,
-					"branch_id": 1,
-					"date_time": "2025-04-19 16:45:00",
-					"total_price": 15000,
-					"cash_amount": 100000,
-					"change_amount": 85000,
-					"payment_method": "cash",
-					"is_online_order": true,
-					"customer_name": "John Doe",
-					"customer_phone": "08123456789",
-					"customer_address": "Jl. Mawar No.5",
-					"notes": "Tanpa cabe"
-				},
-				"transaction_details": [
-					{
-						"product_id": 1,
-						"quantity": 2,
-						"price": 25000,
-						"subtotal": 5000
-					},
-					{
-						"product_id": 2,
-						"quantity": 1,
-						"price": 50000,
-						"subtotal": 5000
-					}
-				]
-			}
 			console.warn(transactionPayload);
 			// Konfigurasi request dengan header Authorization
 			const response = await fetch(`${BASE_API_URL}/api/transactions`, {

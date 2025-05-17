@@ -11,7 +11,6 @@ import {
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router'
 import { images, square, receiptOutline, list, storefront } from 'ionicons/icons'
-import StudentList from './pages/StudentList'
 import Tab2 from './pages/Tab2'
 import Tab3 from './pages/Tab3'
 
@@ -95,7 +94,7 @@ const App: React.FC = () => (
               <IonIcon aria-hidden="true" icon={receiptOutline} />
               <IonLabel>Kasir</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="student-list" href={`/transaction-history`}>
+            <IonTabButton tab="transaction-history" href={`/transaction-history`}>
               <IonIcon aria-hidden="true" icon={list} />
               <IonLabel>Riwayat Transaksi</IonLabel>
             </IonTabButton>
