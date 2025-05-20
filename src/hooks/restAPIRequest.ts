@@ -1,7 +1,7 @@
 import React from "react";
 import Cookies from "js-cookie";
 // const BASE_API_URL = "https://api.rindapermai.com"
-const BASE_API_URL = "http://localhost:8080"
+export const BASE_API_URL = "http://localhost:8080"
 
 export interface ApiResponse {
 	success: boolean;
@@ -118,7 +118,7 @@ export const loginRequest = async (authData: Auth): Promise<ApiResponse> => {
 	});
 };
 
-const checkOKResponse = (response: any) => {
+export const checkOKResponse = (response: any) => {
 	// console.log(response);
 	if (!response.ok) {
 		if (response.status === 401) {

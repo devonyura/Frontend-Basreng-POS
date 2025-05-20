@@ -25,9 +25,10 @@ import {
   IonButtons,
   IonMenuButton,
   IonMenu,
-  IonAlert
+  IonAlert,
+  IonMenuToggle
 } from '@ionic/react';
-import { exitOutline, statsChart } from 'ionicons/icons';
+import { exitOutline, statsChart, pricetagsOutline } from 'ionicons/icons';
 
 import { useState, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -57,6 +58,7 @@ const Dashboard: React.FC = () => {
   const location = useLocation<LocationState>();
   const [isTokenExpired, setIsTokenExpired] = useState(location.state?.isTokenExpired || false);
   const [showLogoutAlert, setLogoutShowAlert] = useState(false);
+  const [hideMenu, setHideMenu] = useState(false);
 
 
   const handleLogout = () => {
@@ -65,14 +67,19 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <IonMenu contentId="main-content">
+      <IonMenu contentId="main-content" >
         <IonHeader>
           <IonToolbar>
             <IonTitle>Menu Content</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
-
+          <IonMenuToggle>
+            <IonButton routerLink="/product-list" expand="block">
+              <IonIcon icon={pricetagsOutline} slot="start" />
+              Data Barang
+            </IonButton>
+          </IonMenuToggle>
           <IonButton onClick={() => setLogoutShowAlert(true)} expand='block'>
             <IonIcon icon={exitOutline} slot='start' />
             Keluar
