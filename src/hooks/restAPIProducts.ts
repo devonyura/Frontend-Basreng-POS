@@ -20,7 +20,7 @@ export interface ProductPayload {
 export interface UpdateProductPayload {
   id: string;
   category_id: string;
-  subcategory_id: string | null;
+  subcategory_id: string | null | undefined;
   name: string;
   price: string;
 }

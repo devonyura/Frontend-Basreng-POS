@@ -1,43 +1,27 @@
 // ProductListPage.tsx
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonButton,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonButtons,
-  IonBackButton,
-  IonSpinner,
-  IonAlert
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonButton, IonIcon, IonItem, IonLabel, IonList,
+  IonButtons, IonBackButton, IonSpinner, IonAlert
 } from '@ionic/react';
 import { pencil, trashBin } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 import { getProducts, Product, deleteProduct } from '../../hooks/restAPIProducts';
 import ProductForm, { AlertMessageProps } from './ProductForm';
+import './ProductListPage.css';
 
 const ProductListPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false)
 
-  const [showAlert, setShowAlert] = useState(false)
-  const [alertMesage, setAlertMesage] = useState<AlertMessageProps>({ title: '', message: '' })
+  const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  const handleSuccess = (info: string = "Ditambah") => {
-    // refresh data jika perlu
-    info = editingProduct ? "Diubah" : "Ditambah"
-    setShowModal(false)
-    fetchProducts()
-    setShowAlert(true)
-    setAlertMesage({ title: 'Berhasil', message: `Produk Berhasil ${info}!` })
-    setEditingProduct(null)
-    fetchProducts();
-  }
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({ title: '', message: '' });
+
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -54,27 +38,43 @@ const ProductListPage: React.FC = () => {
     }
   };
 
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-
-  const handleEdit = (product: Product) => {
-    console.log("Edit:", product);
-    let price = product.price.toString().split('.')
-    product.price = price[0]
-    setEditingProduct(product)
-    setShowModal(true)
+  const handleAdd = () => {
+    setEditingProduct(null);
+    setShowModal(true);
   };
 
-  const handleAdd = () => {
-    setEditingProduct(null)
-    setShowModal(true)
-  }
+  const handleEdit = (product: Product) => {
+    const sanitizedProduct = { ...product, price: product.price.toString().split('.')[0] };
+    setEditingProduct(sanitizedProduct);
+    setShowModal(true);
+  };
 
-  const [showConfirmBeforeDelete, setShowConfirmBeforeDelete] = useState(false)
-  const [id, setId] = useState('')
+  const handleSuccess = () => {
+    const info = editingProduct ? 'Diubah' : 'Ditambah';
+    setShowModal(false);
+    setEditingProduct(null);
+    fetchProducts();
+    setAlertMessage({ title: 'Berhasil', message: `Produk Berhasil ${info}!` });
+    setShowAlert(true);
+  };
 
-  // Tambahkan di dalam komponen
-  const handleDelete = async () => {
-    setShowConfirmBeforeDelete(true)
+  const confirmDelete = (productId: string) => {
+    setSelectedProductId(productId);
+    setShowConfirmDelete(true);
+  };
+
+  const executeDelete = async () => {
+    try {
+      await deleteProduct(selectedProductId);
+      setAlertMessage({ title: 'Berhasil', message: 'Produk Berhasil Dihapus!' });
+      fetchProducts();
+    } catch (error) {
+      console.error("Gagal menghapus produk:", error);
+      setAlertMessage({ title: 'Gagal', message: `Gagal menghapus produk: ${error}` });
+    } finally {
+      setShowAlert(true);
+      setShowConfirmDelete(false);
+    }
   };
 
   return (
@@ -92,7 +92,7 @@ const ProductListPage: React.FC = () => {
         <IonButton expand="block" onClick={handleAdd}>Tambah Barang</IonButton>
 
         {loading ? (
-          <IonSpinner name="crescent" />
+          <IonSpinner name="crescent" className='ion-spin-list' />
         ) : (
           <IonList>
             {products.map(product => (
@@ -104,68 +104,48 @@ const ProductListPage: React.FC = () => {
                 <IonButton fill="clear" slot="end" onClick={() => handleEdit(product)}>
                   <IonIcon icon={pencil} />
                 </IonButton>
-                <IonButton fill="clear" color="danger" slot="end" onClick={() => { setId(product.id); handleDelete() }}>
+                <IonButton fill="clear" color="danger" slot="end" onClick={() => confirmDelete(product.id)}>
                   <IonIcon icon={trashBin} />
                 </IonButton>
               </IonItem>
             ))}
           </IonList>
         )}
+
         <ProductForm
           isOpen={showModal}
-          onDidDismiss={() => {
-            setShowModal(false)
-            setEditingProduct(null)
-          }}
           initialProduct={editingProduct}
-          onSuccess={() => {
-            handleSuccess()
-          }
-          }
+          onSuccess={handleSuccess}
+          onDidDismiss={() => {
+            setShowModal(false);
+            setEditingProduct(null);
+          }}
         />
+
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}
-          header={alertMesage.title}
-          message={alertMesage.message}
-          buttons={[
-            {
-              text: "OK",
-              role: "cancel",
-            },
-          ]}
+          header={alertMessage.title}
+          message={alertMessage.message}
+          buttons={['OK']}
         />
+
         <IonAlert
-          isOpen={showConfirmBeforeDelete}
-          onDidDismiss={() => { }}
+          isOpen={showConfirmDelete}
           header="Hapus Produk?"
-          message={
-            `yakin ingin menghapus produk?`
-          }
+          message="Yakin ingin menghapus produk?"
           buttons={[
             {
               text: "Tidak",
               role: "cancel",
-              handler: () => { setShowConfirmBeforeDelete(false) }
+              handler: () => setShowConfirmDelete(false)
             },
             {
               text: "Ya",
-              handler: async () => {
-                setShowConfirmBeforeDelete(false)
-                try {
-                  await deleteProduct(id);
-                  setAlertMesage({ title: 'Berhasil', message: 'Produk Berhasil Dihapus!' });
-                  setShowAlert(true);
-                  // Reload daftar produk
-                  fetchProducts();
-                } catch (error) {
-                  console.error("Gagal menghapus produk:", error);
-                  setAlertMesage({ title: 'Gagal', message: `Gagal menghapus produk: ${error}` });
-                  setShowAlert(true);
-                }
-              }
-            },
+              handler: executeDelete
+            }
           ]}
+          onDidDismiss={() => setShowConfirmDelete(false)}
         />
       </IonContent>
     </IonPage>

@@ -1,15 +1,38 @@
-import { IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonItem, IonLabel, IonSpinner, IonSelect, IonSelectOption, IonAlert } from '@ionic/react';
+import {
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButton,
+  IonButtons,
+  IonInput,
+  IonItem,
+  IonLabel,
+  IonSpinner,
+  IonSelect,
+  IonSelectOption,
+  IonAlert
+} from '@ionic/react';
 import { useEffect, useState } from 'react';
-import { createProduct, ProductPayload, UpdateProductPayload, updateProduct, Product } from '../../hooks/restAPIProducts';
+import {
+  createProduct,
+  updateProduct,
+  ProductPayload,
+  UpdateProductPayload
+} from '../../hooks/restAPIProducts';
 import { getCategories, Category } from '../../hooks/restAPICategories';
 import { getSubCategoriesbyCategory } from '../../hooks/restAPISubCategories';
 
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface ProductFormProps {
   isOpen: boolean;
   onDidDismiss: () => void;
-  onSuccess?: () => void; // callback setelah simpan berhasil
-  initialProduct?: any; // callback setelah simpan berhasil
+  onSuccess?: () => void;
+  initialProduct?: any;
 }
 
 export interface AlertMessageProps {
@@ -17,24 +40,52 @@ export interface AlertMessageProps {
   message: string;
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onDidDismiss, onSuccess, initialProduct }) => {
-  const [formData, setFormData] = useState<ProductPayload>({
-    category_id: '',
-    subcategory_id: null,
-    name: '',
-    price: '',
-  });
+const productSchema = z.object({
+  name: z.string().min(1, 'Nama produk harus diisi'),
+  price: z.string().min(1, 'Harga harus diisi'),
+  category_id: z.string().min(1, 'Kategori harus dipilih'),
+  subcategory_id: z.string().nullable().optional()
+});
 
+type ProductFormData = z.infer<typeof productSchema>;
+
+const ProductForm: React.FC<ProductFormProps> = ({
+  isOpen,
+  onDidDismiss,
+  onSuccess,
+  initialProduct
+}) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Category[]>([]);
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMesage, setAlertMesage] = useState<AlertMessageProps>({ title: '', message: '' });
+  const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({
+    title: '',
+    message: ''
+  });
   const [loading, setLoading] = useState(false);
 
-  // Handle fetch subkategori jika kategori berubah
+  const {
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors }
+  } = useForm<ProductFormData>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: '',
+      price: '',
+      category_id: '',
+      subcategory_id: null
+    }
+  });
+
+  const watchCategory = watch('category_id');
+
+  // Fetch subkategori jika category berubah
   useEffect(() => {
-    if (formData.category_id) {
-      getSubCategoriesbyCategory(formData.category_id)
+    if (watchCategory) {
+      getSubCategoriesbyCategory(watchCategory)
         .then((data) => setSubcategories(data))
         .catch((error) => {
           console.error('Gagal Mengambil Sub Kategori', error);
@@ -43,9 +94,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onDidDismiss, onSucce
     } else {
       setSubcategories([]);
     }
-  }, [formData.category_id]);
+  }, [watchCategory]);
 
-  // Fetch kategori setiap buka modal
+  // Fetch kategori saat modal terbuka
   useEffect(() => {
     if (isOpen) {
       resetForm();
@@ -55,73 +106,63 @@ const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onDidDismiss, onSucce
     }
   }, [isOpen]);
 
-  // Set nilai default jika sedang edit
+  // Isi default jika edit
   useEffect(() => {
     if (initialProduct) {
-      setFormData({
-        category_id: initialProduct.category_id,
-        subcategory_id: initialProduct.subcategory_id,
+      reset({
         name: initialProduct.name,
         price: initialProduct.price,
+        category_id: initialProduct.category_id,
+        subcategory_id: initialProduct.subcategory_id || null
       });
     } else {
-      resetForm()
+      resetForm();
     }
-  }, [initialProduct]);
+  }, [initialProduct, reset]);
 
   const resetForm = () => {
-    setFormData({
-      category_id: '',
-      subcategory_id: null,
+    reset({
       name: '',
-      price: ''
+      price: '',
+      category_id: '',
+      subcategory_id: null
     });
   };
 
-  const handleChange = (field: keyof ProductPayload, value: string | null) => {
-    if (field === 'category_id') {
-      setFormData((prev) => ({
-        ...prev,
-        category_id: value ?? '',
-        subcategory_id: '', // reset subcategory agar fieldnya muncul kembali
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.category_id || !formData.name || !formData.price) {
-      setShowAlert(true);
-      setAlertMesage({ title: 'Validasi Error', message: 'Semua field (kecuali subkategori) harus diisi!' });
-      return;
-    }
-
+  const onSubmit = async (formData: ProductFormData) => {
     try {
       setLoading(true);
 
+      const payload = {
+        ...formData,
+        subcategory_id: formData.subcategory_id ?? null
+      };
+
       if (initialProduct) {
         const updatePayload: UpdateProductPayload = {
-          id: initialProduct.id,
-          ...formData,
+          ...payload,
+          id: initialProduct.id
         };
         await updateProduct(updatePayload);
-
       } else {
-        await createProduct(formData);
-
+        await createProduct(payload);
       }
+
       resetForm();
       onDidDismiss();
       onSuccess?.();
     } catch (err) {
       setShowAlert(true);
-      setAlertMesage({ title: 'Gagal Menyimpan', message: `${err}` });
+      setAlertMessage({
+        title: 'Gagal Menyimpan',
+        message: `${err}`
+      });
       console.error('Gagal menyimpan produk:', err);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
@@ -134,67 +175,91 @@ const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onDidDismiss, onSucce
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <IonItem>
-          <IonLabel position="stacked">Nama Produk</IonLabel>
-          <IonInput
-            value={formData.name}
-            onIonChange={(e) => handleChange('name', e.detail.value!)}
-            required
-          />
-        </IonItem>
-
-        <IonItem>
-          <IonLabel position="stacked">Harga</IonLabel>
-          <IonInput
-            type="number"
-            value={formData.price}
-            onIonChange={(e) => handleChange('price', e.detail.value!)}
-            required
-          />
-        </IonItem>
-
-        <IonItem>
-          <IonLabel position="stacked">Kategori</IonLabel>
-          <IonSelect
-            value={formData.category_id}
-            onIonChange={(e) => handleChange('category_id', e.detail.value)}
-            placeholder="Pilih Kategori"
-            aria-required
-          >
-            {categories.map((cat) => (
-              <IonSelectOption key={cat.id} value={cat.id}>
-                {cat.name}
-              </IonSelectOption>
-            ))}
-          </IonSelect>
-        </IonItem>
-
-        {subcategories && subcategories.length > 0 && (
+        <form onSubmit={handleSubmit(onSubmit)}>
           <IonItem>
-            <IonLabel position="stacked">Sub Kategori</IonLabel>
-            <IonSelect
-              value={formData.subcategory_id || ''}
-              onIonChange={(e) => handleChange('subcategory_id', e.detail.value)}
-              placeholder="Pilih Sub Kategori"
-            >
-              {subcategories.map((Scat) => (
-                <IonSelectOption key={Scat.id} value={Scat.id}>
-                  {Scat.name}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
+            <IonLabel position="stacked">Nama Produk</IonLabel>
+            <Controller
+              control={control}
+              name="name"
+              render={({ field }) => (
+                <IonInput {...field} value={field.value} onIonChange={e => field.onChange(e.detail.value!)} />
+              )}
+            />
           </IonItem>
-        )}
+          {errors.name && <p className="ion-text-error">{errors.name.message}</p>}
 
-        <IonButton expand="block" onClick={handleSubmit} disabled={loading}>
-          {loading ? <IonSpinner name="dots" /> : initialProduct ? 'Simpan Perubahan' : 'Simpan Barang Baru'}
-        </IonButton>
+          <IonItem>
+            <IonLabel position="stacked">Harga</IonLabel>
+            <Controller
+              control={control}
+              name="price"
+              render={({ field }) => (
+                <IonInput
+                  type="number"
+                  {...field}
+                  value={field.value}
+                  onIonChange={e => field.onChange(e.detail.value!)}
+                />
+              )}
+            />
+          </IonItem>
+          {errors.price && <p className="ion-text-error">{errors.price.message}</p>}
+
+          <IonItem>
+            <IonLabel position="stacked">Kategori</IonLabel>
+            <Controller
+              control={control}
+              name="category_id"
+              render={({ field }) => (
+                <IonSelect
+                  value={field.value}
+                  placeholder="Pilih Kategori"
+                  onIonChange={e => field.onChange(e.detail.value)}
+                >
+                  {categories.map((cat) => (
+                    <IonSelectOption key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              )}
+            />
+          </IonItem>
+          {errors.category_id && <p className="ion-text-error">{errors.category_id.message}</p>}
+
+          {(subcategories.length > 0) && (
+            <IonItem>
+              <IonLabel position="stacked">Sub Kategori</IonLabel>
+              <Controller
+                control={control}
+                name="subcategory_id"
+                render={({ field }) => (
+                  <IonSelect
+                    value={field.value || ''}
+                    placeholder="Pilih Sub Kategori"
+                    onIonChange={e => field.onChange(e.detail.value)}
+                  >
+                    {subcategories.map((subcat) => (
+                      <IonSelectOption key={subcat.id} value={subcat.id}>
+                        {subcat.name}
+                      </IonSelectOption>
+                    ))}
+                  </IonSelect>
+                )}
+              />
+            </IonItem>
+          )}
+
+          <IonButton expand="block" type="submit" disabled={loading}>
+            {loading ? <IonSpinner name="dots" /> : initialProduct ? 'Simpan Perubahan' : 'Simpan Barang Baru'}
+          </IonButton>
+        </form>
 
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}
-          header={alertMesage.title}
-          message={alertMesage.message}
+          header={alertMessage.title}
+          message={alertMessage.message}
           buttons={[{ text: 'OK', role: 'cancel' }]}
         />
       </IonContent>
