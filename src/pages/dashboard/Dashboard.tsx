@@ -80,6 +80,12 @@ const Dashboard: React.FC = () => {
               Data Barang
             </IonButton>
           </IonMenuToggle>
+          <IonMenuToggle>
+            <IonButton routerLink="/categories" expand="block">
+              <IonIcon icon={pricetagsOutline} slot="start" />
+              Kategori
+            </IonButton>
+          </IonMenuToggle>
           <IonButton onClick={() => setLogoutShowAlert(true)} expand='block'>
             <IonIcon icon={exitOutline} slot='start' />
             Keluar
