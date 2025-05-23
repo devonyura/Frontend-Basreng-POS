@@ -6,10 +6,11 @@ import {
 import { add, pencil, trashBin } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 import { getCategories, deleteCategory, Category } from '../../hooks/restAPICategories';
-import { getSubCategoriesbyCategory, SubCategory } from '../../hooks/restAPISubCategories';
+import { deleteSubCategory, getSubCategoriesbyCategory, SubCategory } from '../../hooks/restAPISubCategories';
 // import CategoryForm from './CategoryForm'; // Kita buat setelah ini 
 import { AlertMessageProps } from '../products/ProductForm';
 import CategoryAlertForm from './CategoryAlertForm';
+import SubCategoryAlertForm from "./SubCategoryAlertForm";
 
 const CategoryListPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -18,6 +19,12 @@ const CategoryListPage: React.FC = () => {
   // State baru:
   const [subCategories, setSubCategories] = useState<{ [key: string]: SubCategory[] }>({});
   const [loadingSub, setLoadingSub] = useState<{ [key: string]: boolean }>({});
+  const [deleteType, setDeleteType] = useState<'category' | 'subCategory' | null>(null);
+
+  const [showSubCategoryForm, setShowSubCategoryForm] = useState(false);
+  const [editingSubCategory, setEditingSubCategory] = useState<SubCategory | null>(null);
+  const [parentCategoryId, setParentCategoryId] = useState<string | null>(null);
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState('');
 
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -91,6 +98,7 @@ const CategoryListPage: React.FC = () => {
 
   const confirmDelete = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
+    setDeleteType('category')
     setShowConfirmDelete(true);
   };
 
@@ -111,19 +119,54 @@ const CategoryListPage: React.FC = () => {
 
   const handleAddSub = (categoryId: string) => {
     console.log('Tambah sub kategori untuk:', categoryId);
-    // show form/modal di langkah selanjutnya
+    setParentCategoryId(categoryId)
+    setEditingSubCategory(null)
+    setShowSubCategoryForm(true)
   };
 
   const handleEditSub = (sub: SubCategory, categoryId: string) => {
     console.log('Edit sub kategori:', sub, 'dari kategori:', categoryId);
+    setParentCategoryId(categoryId)
+    setEditingSubCategory(sub)
+    setShowSubCategoryForm(true)
   };
 
-  const handleDeleteSub = async (subId: string, categoryId: string) => {
-    console.log('Hapus sub kategori:', subId);
-    // Nanti kita buat delete dari API
-    // Lalu refresh subkategori:
-    await fetchSubCategories(categoryId);
+  const confirmSubDelete = (subCategoryId: string, categoryId: string) => {
+    setSelectedSubCategoryId(subCategoryId);
+    setParentCategoryId(categoryId)
+    setDeleteType('subCategory')
+    setShowConfirmDelete(true);
   };
+
+  const executeSubDelete = async () => {
+    try {
+      await deleteSubCategory(selectedSubCategoryId);
+      setAlertMessage({ title: 'Berhasil', message: 'Sub Kategori Berhasil Dihapus!' });
+      setShowConfirmDelete(false)
+      if (parentCategoryId) {
+        await fetchSubCategories(parentCategoryId)
+      }
+    } catch (error) {
+      console.error("Gagal menghapus Sub kategori:", error);
+      setAlertMessage({ title: 'Gagal', message: `Gagal menghapus Sub kategori: ${error}` });
+    } finally {
+      setShowAlert(true);
+      setShowConfirmDelete(false);
+    }
+    setEditingSubCategory(null);
+  };
+
+  const handleSubSuccess = async () => {
+    const info = editingSubCategory ? 'Diubah' : 'Ditambah';
+    if (parentCategoryId) {
+      await fetchSubCategories(parentCategoryId)
+    }
+    setShowSubCategoryForm(false)
+    setEditingSubCategory(null)
+    setParentCategoryId(null)
+    setAlertMessage({ title: 'Berhasil', message: `Sub Kategori Berhasil ${info}!` });
+    setShowAlert(true);
+  }
 
   return (
     <IonPage>
@@ -171,7 +214,7 @@ const CategoryListPage: React.FC = () => {
                           <IonButton fill="clear" slot="end" onClick={() => handleEditSub(sub, category.id)}>
                             <IonIcon icon={pencil} />
                           </IonButton>
-                          <IonButton fill="clear" color="danger" slot="end" onClick={() => handleDeleteSub(sub.id, category.id)}>
+                          <IonButton fill="clear" color="danger" slot="end" onClick={() => confirmSubDelete(sub.id, category.id)}>
                             <IonIcon icon={trashBin} />
                           </IonButton>
                         </IonItem>
@@ -200,12 +243,21 @@ const CategoryListPage: React.FC = () => {
           isOpen={showCategoryForm}
           onDidDismiss={() => setShowCategoryForm(false)}
           onSuccess={() => {
-            // setShowCategoryForm(false)
-            // fetchCategories()
             handleSuccess()
           }}
           initialCategory={editingCategory}
         />
+
+        <SubCategoryAlertForm
+          isOpen={showSubCategoryForm}
+          onDidDismiss={() => setShowSubCategoryForm(false)}
+          onSuccess={() => {
+            handleSubSuccess()
+          }}
+          initialSubCategory={editingSubCategory}
+          parentCategoryId={parentCategoryId}
+        />
+
 
         <IonAlert
           isOpen={showAlert}
@@ -217,8 +269,8 @@ const CategoryListPage: React.FC = () => {
 
         <IonAlert
           isOpen={showConfirmDelete}
-          header="Hapus Kategori?"
-          message="Yakin ingin menghapus kategori?"
+          header={`Hapus ${deleteType === 'category' ? 'Kategori' : 'Sub Kategori'}?`}
+          message={`Yakin Menghapus ${deleteType === 'category' ? 'Kategori' : 'Sub Kategori'}?`}
           buttons={[
             {
               text: "Tidak",
@@ -227,7 +279,7 @@ const CategoryListPage: React.FC = () => {
             },
             {
               text: "Ya",
-              handler: executeDelete
+              handler: deleteType === 'category' ? executeDelete : executeSubDelete
             }
           ]}
           onDidDismiss={() => setShowConfirmDelete(false)}

@@ -28,7 +28,7 @@ import {
   IonAlert,
   IonMenuToggle
 } from '@ionic/react';
-import { exitOutline, statsChart, pricetagsOutline } from 'ionicons/icons';
+import { exitOutline, statsChart, pricetagsOutline, build } from 'ionicons/icons';
 
 import { useState, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -84,6 +84,12 @@ const Dashboard: React.FC = () => {
             <IonButton routerLink="/categories" expand="block">
               <IonIcon icon={pricetagsOutline} slot="start" />
               Kategori
+            </IonButton>
+          </IonMenuToggle>
+          <IonMenuToggle>
+            <IonButton routerLink="/branch" expand="block">
+              <IonIcon icon={build} slot="start" />
+              Cabang
             </IonButton>
           </IonMenuToggle>
           <IonButton onClick={() => setLogoutShowAlert(true)} expand='block'>

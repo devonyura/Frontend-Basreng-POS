@@ -7,8 +7,13 @@ export interface SubCategory {
   name: string;
 }
 
+export interface SubCategoryPayload {
+  name: string;
+  category_id: string;
+}
+
 export interface SubCategoriesPayload {
-  id_categories: string; // ini id dari categories
+  id_categories: string | null; // ini id dari categories
   name: string;
 }
 
@@ -52,7 +57,7 @@ export const getSubCategoriesbyCategory = async (id_category: string) => {
   }
 };
 
-export const createSubCategories = async (subCategoriesPayload: SubCategoriesPayload): Promise<ApiResponse> => {
+export const createSubCategory = async (subCategoriesPayload: SubCategoriesPayload): Promise<ApiResponse> => {
   return new Promise(async (resolve, reject) => {
     console.log("API:", subCategoriesPayload)
     try {
@@ -93,6 +98,51 @@ export const createSubCategories = async (subCategoriesPayload: SubCategoriesPay
       const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
       console.log("Gagal menambah Produk:", error);
       reject("Gagal menambah Produk: " + errorMessage);
+    }
+  });
+};
+
+export const updateSubCategory = async (updateCategoriesPayload: SubCategoriesPayload, id: string | number): Promise<ApiResponse> => {
+  return new Promise(async (resolve, reject) => {
+    console.log("API:", updateCategoriesPayload)
+    try {
+      // Ambil token JWT dari localStorage
+      const TOKEN = Cookies.get("token");
+
+      // Cek apakah API online
+      const apiOnline = await isApiOnline();
+      if (!apiOnline) {
+        reject("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+        return;
+      }
+
+      console.warn(updateCategoriesPayload);
+      // Konfigurasi request dengan header Authorization
+      const response = await fetch(`${BASE_API_URL}/api/subcategories/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${TOKEN}`,
+        },
+        body: JSON.stringify(updateCategoriesPayload),
+      });
+
+      // Check Response
+      checkOKResponse(response)
+
+      // Ubah data ke json format
+      const data = await response.json();
+
+      console.info("Status Request Save Transaction : ", data.status);
+
+      resolve({ success: true, data });
+
+    }
+    catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
+      console.log("Gagal edit Produk:", error);
+      reject("Gagal edit Produk: " + errorMessage);
     }
   });
 };

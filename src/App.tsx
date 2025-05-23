@@ -53,6 +53,7 @@ import TransactionHistory from './pages/transaction_history/TransactionHistory';
 import Dashboard from './pages/dashboard/Dashboard';
 import ProductListPage from './pages/products/ProductListPage';
 import CategoryListPage from './pages/categories/CategoryListPage';
+import BranchListPage from './pages/branch/BranchListPage';
 
 setupIonicReact();
 
@@ -91,6 +92,9 @@ const App: React.FC = () => (
             </Route>
             <Route exact path={`/categories`}>
               <CategoryListPage />
+            </Route>
+            <Route exact path={`/branch`}>
+              <BranchListPage />
             </Route>
           </IonRouterOutlet>
           <IonTabBar slot="bottom">
