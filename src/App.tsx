@@ -54,6 +54,8 @@ import Dashboard from './pages/dashboard/Dashboard';
 import ProductListPage from './pages/products/ProductListPage';
 import CategoryListPage from './pages/categories/CategoryListPage';
 import BranchListPage from './pages/branch/BranchListPage';
+import UsersListPage from './pages/users/UsersListPage';
+import ReportPage from './pages/reports/ReportPage';
 
 setupIonicReact();
 
@@ -95,6 +97,12 @@ const App: React.FC = () => (
             </Route>
             <Route exact path={`/branch`}>
               <BranchListPage />
+            </Route>
+            <Route exact path={`/users`}>
+              <UsersListPage />
+            </Route>
+            <Route exact path={`/report`}>
+              <ReportPage />
             </Route>
           </IonRouterOutlet>
           <IonTabBar slot="bottom">
