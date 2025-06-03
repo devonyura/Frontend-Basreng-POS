@@ -102,21 +102,22 @@ const Dashboard: React.FC = () => {
         console.warn('Gagal ambil produk terlaris:', e);
       }
 
-      // try {
-      //   const response = await getTransactionsReport();
-      //   // Pastikan total_sales dikonversi ke number
-      //   console.log('Chart API response:', response); // 👉 cek isi response
-      //   // Asumsikan response adalah array langsung, kalau tidak kita perbaiki
-      //   const formatted = response.map((item: any) => ({
-      //     date: item.date,
-      //     total_sales: parseFloat(item.total_sales),
-      //   }));
-      //   setChartData(formatted);
-      //   setLoadingChart(false);
-      // } catch (error: any) {
-      //   setErrorChart(error.message || 'Gagal memuat chart');
-      //   setLoadingChart(false);
-      // }
+      try {
+        const response = await getTransactionsReport(30);
+        // Pastikan total_sales dikonversi ke number
+        console.log('Chart API response:', response); // 👉 cek isi response
+        // Asumsikan response adalah array langsung, kalau tidak kita perbaiki
+        const formatted = response.map((item: any) => ({
+          date: item.date,
+          total_sales: parseFloat(item.total_sales),
+        }));
+        setChartData(formatted);
+        console.log(chartData);
+        setLoadingChart(false);
+      } catch (error: any) {
+        setErrorChart(error.message || 'Gagal memuat chart');
+        setLoadingChart(false);
+      }
 
     } catch (err: any) {
       console.error(err);
@@ -339,7 +340,7 @@ const Dashboard: React.FC = () => {
             </IonRow>
 
             {/* Visualisasi */}
-            {/* <IonRow>
+            <IonRow>
               <IonCol size="12">
                 <IonCard>
                   <IonCardHeader>
@@ -353,7 +354,7 @@ const Dashboard: React.FC = () => {
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={chartData}>
                           <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-                          <XAxis dataKey="date" />
+                          <XAxis dataKey="date" angle={-50} textAnchor="end" />
                           <YAxis tickFormatter={(value) => `${value / 1_000_000}jt`} />
                           <Tooltip formatter={(value: number) => `Rp.${value.toLocaleString()}`} />
                           <Bar type="monotone" dataKey="total_sales" stroke="#3880ff" strokeWidth={2} />
@@ -363,7 +364,7 @@ const Dashboard: React.FC = () => {
                   </IonCardContent>
                 </IonCard>
               </IonCol>
-            </IonRow> */}
+            </IonRow>
 
           </IonGrid >
           {/* Error Message */}

@@ -159,7 +159,7 @@ export const getTransactionsReport = async (days: any = ''): Promise<ChartIncome
     const apiOnline = await isApiOnline();
     if (!apiOnline) throw new Error("Tidak dapat terhubung ke server.");
 
-    const url = `${BASE_API_URL}/api/report/getTransactionsReport?day=${days}`;
+    const url = `${BASE_API_URL}/api/report/getTransactionsReport/${days}`;
     const response = await fetch(url, {
       method: "GET",
       credentials: "include",
