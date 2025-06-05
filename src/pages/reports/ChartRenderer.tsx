@@ -17,6 +17,7 @@ import "./ChartRenderer.css";
 import { TransactionsReport, ProductSellsReport } from '../../hooks/interfaces';
 import { rupiahFormat } from "../../hooks/formatting";
 
+// Warna untuk chart (Bar dan Pie)
 const COLORS = [
   "#0088FE", "#00C49F", "#FFBB28", "#FF8042",
   "#A28CFF", "#FF6B6B", "#4D96FF", "#00B8A9",
@@ -31,19 +32,30 @@ interface ChartRendererProps {
   isDayReport: boolean;
 }
 
+// Komponen utama ChartRenderer
 export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps>(
   ({ transactionsReport, productSellsReport, setWidth, isDayReport }, ref) => {
 
+    // Jika sedang menggunakan laporan harian, komponen tidak menampilkan grafik
     if (isDayReport) {
-      return
+      return null;
     }
 
+    // Jika laporan transaksi tidak tersedia atau kosong
     if (!transactionsReport || Object.keys(transactionsReport).length === 0) {
       return <div>Laporan Belum dibuat.</div>;
     }
 
+    // Mengambil daftar nama cabang dari laporan transaksi
     const branchNames: string[] = Object.keys(transactionsReport);
 
+    /**
+     * Persiapan data untuk BarChart
+     * - Looping berdasarkan indeks data pada cabang pertama
+     * - Ambil tanggal dari data cabang pertama
+     * - Format tanggal agar hanya menampilkan hari dan tanggal (tanpa tahun)
+     * - Bangun baris data dengan key sesuai nama cabang
+     */
     const barChartData = branchNames.length > 0
       ? transactionsReport[branchNames[0]].map((_, idx) => {
         const rawDate = transactionsReport[branchNames[0]][idx].date;
@@ -60,13 +72,7 @@ export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps
       })
       : [];
 
-    const branch = branchNames[0]
-    const transactions = transactionsReport[branch]
-
-    const startDate = (transactions && transactions[0]?.date) || "";
-    let endDate = (transactions && transactions[transactions.length - 1]?.date) || "";
-    endDate = (endDate === startDate ? '' : endDate)
-
+    // Data untuk PieChart (6 produk terlaris)
     const pieChartData = productSellsReport
       ? productSellsReport.slice(0, 6).map(product => ({
         name: product.product_name,
@@ -74,9 +80,21 @@ export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps
       }))
       : [];
 
+    // Tanggal awal dan akhir laporan (dari cabang pertama)
+    const branch = branchNames[0];
+    const transactions = transactionsReport[branch];
+    const startDate = transactions?.[0]?.date || "";
+    let endDate = transactions?.[transactions.length - 1]?.date || "";
+    endDate = (endDate === startDate ? '' : endDate);
+
     return (
       <div ref={ref} className="chart-container" style={setWidth ? { width: '100%' } : {}}>
-        <h2 className="chart-header">📊 Grafik Laporan {endDate !== '' ? 'dari' : ''}  {startDate} - {endDate}</h2>
+        {/* Judul utama chart */}
+        <h2 className="chart-header">
+          📊 Grafik Laporan {endDate !== '' ? 'dari' : ''} {startDate} {endDate !== '' && `- ${endDate}`}
+        </h2>
+
+        {/* Bar Chart */}
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
             data={barChartData}
@@ -101,7 +119,12 @@ export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps
           </BarChart>
         </ResponsiveContainer>
 
-        <h3 className="chart-subheader">6 Produk Terlaris {endDate !== '' ? 'dari' : ''} {startDate} - {endDate}</h3>
+        {/* Subjudul Pie Chart */}
+        <h3 className="chart-subheader">
+          6 Produk Terlaris {endDate !== '' ? 'dari' : ''} {startDate} {endDate !== '' && `- ${endDate}`}
+        </h3>
+
+        {/* Pie Chart */}
         <div style={{ width: "100%", height: 400 }}>
           <ResponsiveContainer>
             <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>

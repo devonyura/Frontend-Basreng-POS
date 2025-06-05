@@ -7,23 +7,32 @@ import { getAllReports, getDetailReport } from "../../hooks/restAPIReport";
 
 /**
  * Fungsi generatePDFReport untuk membuat laporan dalam bentuk PDF.
- * @param day Parameter untuk filter hari (bisa string/tanggal).
- * @param chartRefs Referensi chart (HTML element) yang akan dimasukkan ke dalam PDF.
+ * @param day Filter hari (opsional).
+ * @param month Filter bulan (opsional).
+ * @param year Filter tahun (opsional).
+ * @param chartRefs Referensi chart yang akan dimasukkan ke PDF (opsional).
+ * @param isDayReport Flag untuk menentukan apakah laporan detail harian atau bulanan/tahunan.
  */
-export const generatePDFReport = async (day: string = '', month: string = '', year: string = '', chartRefs?: React.RefObject<HTMLDivElement>, isDayReport: boolean = false) => {
+export const generatePDFReport = async (
+  day: string = '',
+  month: string = '',
+  year: string = '',
+  chartRefs?: React.RefObject<HTMLDivElement>,
+  isDayReport: boolean = false
+) => {
+  // Inisialisasi dokumen PDF
   const doc = new jsPDF();
-  console.log(isDayReport);
-  let dataReal
+
+  // Fetch data sesuai jenis laporan
+  let dataReal;
   if (isDayReport) {
     dataReal = await getDetailReport(day) as AllDetailReportsResponse;
   } else {
     dataReal = await getAllReports(day, month, year) as AllReportsResponse;
   }
-  console.log(dataReal)
 
-
+  // ========== Generate Rentang Tanggal ==========
   const allDates: { raw: string; dateObj: Date }[] = [];
-
   Object.keys(dataReal.transactions_report).forEach((location) => {
     dataReal.transactions_report[location].forEach((item) => {
       const rawDate = item.date;
@@ -32,13 +41,11 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
       allDates.push({ raw: rawDate, dateObj });
     });
   });
-
   allDates.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
-
   const startDate = allDates[0]?.raw || "-";
   const endDate = allDates[allDates.length - 1]?.raw || "-";
 
-  // Header Utama
+  // ========== HEADER UTAMA ==========
   doc.setFontSize(14);
   doc.text("Basreng POS Report", doc.internal.pageSize.getWidth() / 2, 12, {
     align: "center"
@@ -50,43 +57,41 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
     if (index > 0) doc.addPage();
 
     doc.setFontSize(12);
-    doc.text(`Laporan Cabang ${location}: Tanggal ${startDate} ${startDate === endDate ? '' : `sampai ${endDate}`}`, doc.internal.pageSize.getWidth() / 2, 19, {
-      align: "center"
-    });
-    doc.setFontSize(14);
-    // doc.text(`Laporan Cabang: ${location}`, 14, 30);
+    doc.text(
+      `Laporan Cabang ${location}: Tanggal ${startDate} ${startDate === endDate ? '' : `sampai ${endDate}`}`,
+      doc.internal.pageSize.getWidth() / 2,
+      19,
+      { align: "center" }
+    );
 
+    // TABEL DETAIL TRANSAKSI HARIAN
     if (isDayReport) {
-      const detailData = dataReal as AllDetailReportsResponse
+      const detailData = dataReal as AllDetailReportsResponse;
       const tableData = detailData.transactions_report[location].map((item, index) => {
-        const transactionCode = item.transaction_code
-
-        const parts = transactionCode.split("-")
-
-        let formattedTime = ''
+        // Parsing jam dari kode transaksi (format: BR-LOC-083247-...)
+        const parts = item.transaction_code.split("-");
+        let formattedTime = '';
         if (parts.length >= 3 && parts[2].length >= 4) {
-          const timePart = parts[2]; // "083247"
+          const timePart = parts[2];
           const hour = timePart.substring(0, 2);
           const minute = timePart.substring(2, 4);
-          formattedTime = `${hour}:${minute}`; // "08:32"
+          formattedTime = `${hour}:${minute}`;
         }
 
-        // Kembalikan array dengan kolom tambahan
         return [
           index + 1,
-          formattedTime,  // Kolom waktu yang diformat
+          formattedTime,
           item.transaction_code,
           item.total_item,
           item.payment_method,
           (item.is_online_order === '0') ? 'Tidak' : 'Ya',
           rupiahFormat(item.total_price)
         ];
-
       });
 
       autoTable(doc, {
         startY: 23,
-        head: [["No", "Jam", "Kode Transaksi", "Total Item", "Metode Pembayaran", "Order Online", "total_price"]],
+        head: [["No", "Jam", "Kode Transaksi", "Total Item", "Metode Pembayaran", "Order Online", "Total Harga"]],
         body: tableData,
         headStyles: {
           fillColor: [189, 111, 10],
@@ -94,12 +99,14 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
           fontStyle: 'bold'
         }
       });
-    } else {
+    }
+    // TABEL REKAP BULANAN/TAHUNAN
+    else {
       const tableData = dataReal.transactions_report[location].map((item, index) => [
         index + 1,
         item.date,
         item.total_transactions,
-        rupiahFormat(item.total_sales),
+        rupiahFormat(item.total_sales)
       ]);
 
       autoTable(doc, {
@@ -107,14 +114,14 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
         head: [["No", "Tanggal", "Total Penjualan", "Total Transaksi"]],
         body: tableData,
         headStyles: {
-          fillColor: [189, 111, 10], // Ini warna orange dalam RGB
-          textColor: 255,          // Putih (opsional, biar kontras)
+          fillColor: [189, 111, 10],
+          textColor: 255,
           fontStyle: 'bold'
         }
       });
-
     }
 
+    // Footer copyright setiap halaman lokasi
     const pageHeight = doc.internal.pageSize.getHeight();
     doc.setFontSize(8);
     doc.setTextColor(150);
@@ -129,7 +136,11 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
   // ========== TABEL TOTAL PENJUALAN PER CABANG ==========
   doc.addPage();
   doc.setFontSize(14);
-  doc.text(`Laporan Total Penjualan Per Cabang dari ${startDate} ${startDate === endDate ? '' : `sampai ${endDate}`}`, 14, 20);
+  doc.text(
+    `Laporan Total Penjualan Per Cabang dari ${startDate} ${startDate === endDate ? '' : `sampai ${endDate}`}`,
+    14,
+    20
+  );
 
   const branchTableData = dataReal.branch_report.map((branch: BranchReport) => [
     branch.branch_name,
@@ -142,8 +153,8 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
     head: [["Cabang", "Total Transaksi", "Total Penjualan"]],
     body: branchTableData,
     headStyles: {
-      fillColor: [189, 9, 9], // Ini warna orange dalam RGB
-      textColor: 255,          // Putih (opsional, biar kontras)
+      fillColor: [189, 9, 9],
+      textColor: 255,
       fontStyle: 'bold'
     }
   });
@@ -160,7 +171,11 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
   // ========== TABEL SALES SEMUA PRODUK ==========
   doc.addPage();
   doc.setFontSize(14);
-  doc.text(`Laporan Sales Semua Produk dari ${startDate} ${startDate === endDate ? '' : `sampai ${endDate}`}`, 14, 20);
+  doc.text(
+    `Laporan Sales Semua Produk dari ${startDate} ${startDate === endDate ? '' : `sampai ${endDate}`}`,
+    14,
+    20
+  );
 
   const productTableData = dataReal.product_sells_report.map((product, index) => [
     index + 1,
@@ -174,8 +189,8 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
     head: [["No", "Produk", "Total Qty", "Total Penjualan"]],
     body: productTableData,
     headStyles: {
-      fillColor: [189, 9, 9], // Ini warna orange dalam RGB
-      textColor: 255,          // Putih (opsional, biar kontras)
+      fillColor: [189, 9, 9],
+      textColor: 255,
       fontStyle: 'bold'
     }
   });
@@ -189,12 +204,11 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
     { align: "center" }
   );
 
-  // ========== CHART ==========
+  // ========== RENDER CHART (Jika ada) ==========
   if (chartRefs && chartRefs.current && !isDayReport) {
     doc.addPage();
 
-    // await waitForChartRendered(chartRefs.current)
-
+    // Tunggu chart selesai dirender (menggunakan requestAnimationFrame)
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
     try {
@@ -207,13 +221,13 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
       const targetWidth = pageWidth - margin * 2;
       const targetHeight = targetWidth * aspectRatio;
 
+      // Konversi chart ke blob dan kemudian ke base64
       const blob = await toBlob(chartRefs.current, {
         cacheBust: true,
         backgroundColor: "#ffffff",
         style: { transformOrigin: "top left" },
         quality: 0.8
       });
-
       if (!blob) throw new Error("Gagal membuat blob dari chart.");
 
       const reader = new FileReader();
@@ -221,15 +235,14 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
       await new Promise((resolve) => {
         reader.onloadend = () => resolve(null);
       });
-
       const base64data = reader.result as string;
+
+      // Tambahkan chart ke halaman PDF
       const x = (pageWidth - targetWidth) / 2;
       const y = 20;
-      // await new Promise((resolve) => setTimeout(resolve, 1000)); // delay agar chart fully rendered
-
       doc.addImage(base64data, "JPEG", x, y, targetWidth, targetHeight, undefined, "FAST");
     } catch (error) {
-      console.error("Gagal menangkap chart:", error);
+      // Jika chart gagal diambil, abaikan saja
     }
 
     doc.setFontSize(8);
@@ -242,7 +255,6 @@ export const generatePDFReport = async (day: string = '', month: string = '', ye
     );
   }
 
-  // Retrun Doc
-  return { doc, dataReal, startDate, endDate }
-
+  // Return dokumen PDF dan data
+  return { doc, dataReal, startDate, endDate };
 };

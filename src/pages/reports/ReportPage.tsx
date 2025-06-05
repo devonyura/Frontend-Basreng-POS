@@ -8,64 +8,93 @@ import {
   IonItem,
   IonLabel,
   IonDatetime,
-  IonList,
   IonLoading,
   IonSelect,
   IonSelectOption,
   IonAlert,
   IonAccordion,
-  IonAccordionGroup
+  IonAccordionGroup,
+  IonBackButton,
+  IonButtons,
+  IonIcon
 } from '@ionic/react';
 import { useState, useRef } from 'react';
-import { documentOutline, downloadOutline } from 'ionicons/icons';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { toBlob } from "html-to-image";
 import { ChartRenderer } from "./ChartRenderer";
 import { getAllReports, getDetailReport } from '../../hooks/restAPIReport';
-import { Transaction, AllReportsResponse, TransactionsReport, BranchReport, ProductSellsReport } from '../../hooks/interfaces';
-import { rupiahFormat } from '../../hooks/formatting';
+import { TransactionsReport, ProductSellsReport } from '../../hooks/interfaces';
 import { generatePDFReport } from "./GenerateReportPDF";
-import { promise } from 'zod';
+import { refresh } from 'ionicons/icons';
 
+// Tipe data yang akan digunakan
 interface DataReal {
   transactions_report?: TransactionsReport | null | undefined;
   product_sells_report: ProductSellsReport[] | null | [];
 }
 
-const ReportPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDayReport, setIsDayReport] = useState(false);
-  const [pdfDoc, setPdfDoc] = useState<jsPDF | null>(null);
+interface GenerateReportReturn {
+  doc: jsPDF,
+  dataReal: {},
+  startDate: {},
+  endDate: {}
+}
 
-  // for chart
-  const chartRef = useRef<HTMLDivElement>(null);
+const ReportPage: React.FC = () => {
+  // ======================
+  // State Management
+  // ======================
+
+  // Loading indicator
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Chart state
   const [isChartWidth, setIsChartWidth] = useState(false);
 
-  // data
-  const [transactionReport, setTransactionReport] = useState<TransactionsReport>()
-  const [productSellsReport, setProductSellsReport] = useState<ProductSellsReport[] | null | undefined>()
+  // PDF document
+  const [pdfDoc, setPdfDoc] = useState<GenerateReportReturn | null>(null);
+
+  // Data laporan
+  const [transactionReport, setTransactionReport] = useState<TransactionsReport>();
+  const [productSellsReport, setProductSellsReport] = useState<ProductSellsReport[] | null | undefined>();
 
   // Alert state
   const [showAlert, setShowAlert] = useState(false);
   const [showDownloadAlert, setShowDownloadAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
-  // Fungsi handleGenerate
-  const handleGenerate = async (dayInput: string = '', monthInput: string = '', yearInput: string = '', isDayReportProp: boolean = false) => {
+  // Filter input
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
+  // Chart reference
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  // Flag apakah laporan harian
+  const [isDayReport, setIsDayReport] = useState(false);
+
+  // ======================
+  // Fungsi Generate Laporan
+  // ======================
+  const handleGenerate = async (
+    dayInput: string = '',
+    monthInput: string = '',
+    yearInput: string = '',
+    isDayReportProp: boolean = false
+  ) => {
     setIsChartWidth(false);
     setIsLoading(true);
 
     try {
-      let dataChart
+      let dataChart;
       if (isDayReportProp) {
-        setIsDayReport(true)
+        setIsDayReport(true);
         dataChart = await getDetailReport(dayInput);
       } else {
         dataChart = await getAllReports(dayInput, monthInput, yearInput);
       }
 
-      // Cek data kosong
+      // Cek apakah data kosong
       const isEmptyData =
         (dataChart.transactions_report?.length ?? 0) === 0 &&
         (dataChart.product_sells_report?.length ?? 0) === 0 &&
@@ -75,20 +104,19 @@ const ReportPage: React.FC = () => {
         setAlertMessage(`Laporan pada ${dayInput || '...'}-${monthInput || '...'}-${yearInput || '...'} tidak ada.`);
         setShowAlert(true);
         setIsLoading(false);
-        return; // Stop proses generate
+        return;
       }
 
-      // Jika data ada, lanjutkan proses
+      // Jika data ada, set data dan generate PDF
       setTransactionReport(dataChart.transactions_report);
       setProductSellsReport(dataChart.product_sells_report);
 
       const data = await generatePDFReport(dayInput, monthInput, yearInput, chartRef, isDayReportProp);
-      setPdfDoc(data.doc);
+      setPdfDoc(data);
 
       setIsChartWidth(true);
-
-      setShowDownloadAlert(true)
-      setAlertMessage(`Silahkan Unduh Laporan dengan klik tombol dibawah`)
+      setShowDownloadAlert(true);
+      setAlertMessage(`Silakan unduh laporan dengan klik tombol di bawah.`);
     } catch (error) {
       console.error("Gagal generate PDF:", error);
     } finally {
@@ -96,51 +124,59 @@ const ReportPage: React.FC = () => {
     }
   };
 
-
+  // ======================
+  // Fungsi Download PDF
+  // ======================
   const downloadPDF = () => {
     if (pdfDoc) {
-      pdfDoc.save("laporan_basreng_pos.pdf");
+
+      pdfDoc.doc.save(`laporan_basreng_pos ${pdfDoc.startDate} - ${pdfDoc.endDate}.pdf`);
+      // refreshPage()
     }
   };
 
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>("");
-
-  const handleGenerateLast30Days = () => {
-    // logika generate laporan 30 hari terakhir
-    handleGenerate('30')
-    console.log("Generate Laporan 30 Hari Terakhir");
+  // ======================
+  // Fungsi Reload Page
+  // ======================
+  const refreshPage = () => {
+    // navigate(0); // reloads the page
+    // atau
+    // navigate(location.pathname); // navigasi ke route yang sama
+    window.location.reload();
   };
 
-  const handleGenerateLast7Days = () => {
-    // logika generate laporan 7 hari terakhir
-    handleGenerate('7')
-    console.log("Generate Laporan 7 Hari Terakhir");
-  };
+  // ======================
+  // Handler Filter
+  // ======================
+  const handleGenerateLast30Days = () => handleGenerate('30');
+  const handleGenerateLast7Days = () => handleGenerate('7');
+  const handleGenerateMonthly = () => handleGenerate('', selectedMonth, selectedYear);
+  const handleGenerateDaily = () => handleGenerate(selectedDate, '', '', true);
 
-  const handleGenerateMonthly = () => {
-    // logika generate laporan bulanan
-    handleGenerate('', selectedMonth, selectedYear)
-
-    console.log(`Generate Laporan Bulan ${selectedMonth} Tahun ${selectedYear}`);
-  };
-
-  const handleGenerateDaily = () => {
-
-    console.log(`Generate Laporan Hari ${selectedDate}`);
-    handleGenerate(selectedDate, '', '', true);
-  };
-
+  // ======================
+  // Render
+  // ======================
   return (
     <IonPage>
+      {/* HEADER */}
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/" />
+          </IonButtons>
           <IonTitle>Halaman Laporan</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={refreshPage}>
+              <IonIcon icon={refresh} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
+
       <IonContent className="ion-padding">
+        {/* Accordion untuk pilihan laporan */}
         <IonAccordionGroup expand="compact">
+          {/* Laporan Harian */}
           <IonAccordion value="daily">
             <IonItem slot="header" lines="full">
               <IonLabel>
@@ -154,7 +190,7 @@ const ReportPage: React.FC = () => {
                   onIonChange={(e) => {
                     const value = e.detail.value!;
                     if (value && typeof value === "string") {
-                      const selectedDateOnly = value ? value.split("T")[0] : '';
+                      const selectedDateOnly = value.split("T")[0];
                       setSelectedDate(selectedDateOnly);
                     }
                   }}
@@ -172,6 +208,7 @@ const ReportPage: React.FC = () => {
             </div>
           </IonAccordion>
 
+          {/* Laporan X Hari Terakhir */}
           <IonAccordion value="last-days">
             <IonItem slot="header" lines="full">
               <IonLabel>
@@ -192,6 +229,7 @@ const ReportPage: React.FC = () => {
             </div>
           </IonAccordion>
 
+          {/* Laporan Bulanan */}
           <IonAccordion value="monthly">
             <IonItem slot="header" lines="full">
               <IonLabel>
@@ -217,10 +255,7 @@ const ReportPage: React.FC = () => {
                 <IonSelect
                   value={selectedYear}
                   placeholder="Pilih Tahun"
-                  onIonChange={(e) => {
-                    const value = e.detail.value;
-                    setSelectedYear(value);
-                  }}
+                  onIonChange={(e) => setSelectedYear(e.detail.value)}
                 >
                   {Array.from({ length: 5 }, (_, idx) => {
                     const year = new Date().getFullYear() - idx;
@@ -245,17 +280,23 @@ const ReportPage: React.FC = () => {
           </IonAccordion>
         </IonAccordionGroup>
 
-        <ChartRenderer ref={chartRef}
+        {/* Chart Preview */}
+        <ChartRenderer
+          ref={chartRef}
           transactionsReport={transactionReport}
           productSellsReport={productSellsReport}
           setWidth={isChartWidth}
           isDayReport={isDayReport}
         />
+
+        {/* Loading Indicator */}
         <IonLoading
           isOpen={isLoading}
           message={'Tunggu sebentar, laporan sedang dibuat...'}
           spinner="dots"
         />
+
+        {/* Alert jika data kosong */}
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}
@@ -263,6 +304,8 @@ const ReportPage: React.FC = () => {
           message={alertMessage}
           buttons={['OK']}
         />
+
+        {/* Alert untuk download */}
         <IonAlert
           isOpen={showDownloadAlert}
           onDidDismiss={() => setShowDownloadAlert(false)}
