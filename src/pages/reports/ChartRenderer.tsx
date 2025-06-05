@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import "./ChartRenderer.css";
 import { TransactionsReport, ProductSellsReport } from '../../hooks/interfaces';
+import { rupiahFormat } from "../../hooks/formatting";
 
 const COLORS = [
   "#0088FE", "#00C49F", "#FFBB28", "#FF8042",
@@ -27,13 +28,18 @@ interface ChartRendererProps {
   transactionsReport?: TransactionsReport | null | undefined;
   productSellsReport?: ProductSellsReport[] | null;
   setWidth: boolean;
+  isDayReport: boolean;
 }
 
 export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps>(
-  ({ transactionsReport, productSellsReport, setWidth }, ref) => {
+  ({ transactionsReport, productSellsReport, setWidth, isDayReport }, ref) => {
+
+    if (isDayReport) {
+      return
+    }
 
     if (!transactionsReport || Object.keys(transactionsReport).length === 0) {
-      return <div>Loading chart...</div>;
+      return <div>Laporan Belum dibuat.</div>;
     }
 
     const branchNames: string[] = Object.keys(transactionsReport);
@@ -74,7 +80,7 @@ export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
             data={barChartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            margin={{ top: 20, right: 30, left: 50, bottom: 60 }}
           >
             <Legend
               verticalAlign="top"
@@ -82,7 +88,7 @@ export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps
               wrapperStyle={{ paddingBottom: '10px' }}
             />
             <XAxis dataKey="date" angle={-50} textAnchor="end" />
-            <YAxis tickFormatter={(value) => `${(value as number) / 1_000_000} Juta`} />
+            <YAxis tickFormatter={(value) => rupiahFormat(value)} />
             <Tooltip />
             {branchNames.map((branch, index) => (
               <Bar

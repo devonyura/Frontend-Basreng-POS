@@ -9,7 +9,12 @@ import {
   IonLabel,
   IonDatetime,
   IonList,
-  IonLoading
+  IonLoading,
+  IonSelect,
+  IonSelectOption,
+  IonAlert,
+  IonAccordion,
+  IonAccordionGroup
 } from '@ionic/react';
 import { useState, useRef } from 'react';
 import { documentOutline, downloadOutline } from 'ionicons/icons';
@@ -17,7 +22,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toBlob } from "html-to-image";
 import { ChartRenderer } from "./ChartRenderer";
-import { getAllReports } from '../../hooks/restAPIReport';
+import { getAllReports, getDetailReport } from '../../hooks/restAPIReport';
 import { Transaction, AllReportsResponse, TransactionsReport, BranchReport, ProductSellsReport } from '../../hooks/interfaces';
 import { rupiahFormat } from '../../hooks/formatting';
 import { generatePDFReport } from "./GenerateReportPDF";
@@ -30,33 +35,62 @@ interface DataReal {
 
 const ReportPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [reportGenerated, setReportGenerated] = useState(false);
+  const [isDayReport, setIsDayReport] = useState(false);
   const [pdfDoc, setPdfDoc] = useState<jsPDF | null>(null);
 
   // for chart
   const chartRef = useRef<HTMLDivElement>(null);
+  const [isChartWidth, setIsChartWidth] = useState(false);
 
+  // data
   const [transactionReport, setTransactionReport] = useState<TransactionsReport>()
   const [productSellsReport, setProductSellsReport] = useState<ProductSellsReport[] | null | undefined>()
 
-  const handleGenerate = async (range: string) => {
-    setReportGenerated(false)
-    setIsLoading(true)
+  // Alert state
+  const [showAlert, setShowAlert] = useState(false);
+  const [showDownloadAlert, setShowDownloadAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  // Fungsi handleGenerate
+  const handleGenerate = async (dayInput: string = '', monthInput: string = '', yearInput: string = '', isDayReportProp: boolean = false) => {
+    setIsChartWidth(false);
+    setIsLoading(true);
 
     try {
-      const dataChart = await getAllReports(range)
-      setTransactionReport(dataChart.transactions_report)
-      setProductSellsReport(dataChart.product_sells_report)
+      let dataChart
+      if (isDayReportProp) {
+        setIsDayReport(true)
+        dataChart = await getDetailReport(dayInput);
+      } else {
+        dataChart = await getAllReports(dayInput, monthInput, yearInput);
+      }
 
-      const data = await generatePDFReport(range, chartRef); // tunggu proses generatePDFReport selesai
+      // Cek data kosong
+      const isEmptyData =
+        (dataChart.transactions_report?.length ?? 0) === 0 &&
+        (dataChart.product_sells_report?.length ?? 0) === 0 &&
+        (dataChart.branch_report?.length ?? 0) === 0;
 
-      setPdfDoc(data.doc)
-      setIsLoading(false);
-      setReportGenerated(true)
+      if (isEmptyData) {
+        setAlertMessage(`Laporan pada ${dayInput || '...'}-${monthInput || '...'}-${yearInput || '...'} tidak ada.`);
+        setShowAlert(true);
+        setIsLoading(false);
+        return; // Stop proses generate
+      }
 
+      // Jika data ada, lanjutkan proses
+      setTransactionReport(dataChart.transactions_report);
+      setProductSellsReport(dataChart.product_sells_report);
+
+      const data = await generatePDFReport(dayInput, monthInput, yearInput, chartRef, isDayReportProp);
+      setPdfDoc(data.doc);
+
+      setIsChartWidth(true);
+
+      setShowDownloadAlert(true)
+      setAlertMessage(`Silahkan Unduh Laporan dengan klik tombol dibawah`)
     } catch (error) {
       console.error("Gagal generate PDF:", error);
-      // Tambahkan notifikasi error jika ingin
     } finally {
       setIsLoading(false);
     }
@@ -87,12 +121,15 @@ const ReportPage: React.FC = () => {
 
   const handleGenerateMonthly = () => {
     // logika generate laporan bulanan
+    handleGenerate('', selectedMonth, selectedYear)
+
     console.log(`Generate Laporan Bulan ${selectedMonth} Tahun ${selectedYear}`);
   };
 
   const handleGenerateDaily = () => {
-    // logika generate laporan harian
+
     console.log(`Generate Laporan Hari ${selectedDate}`);
+    handleGenerate(selectedDate, '', '', true);
   };
 
   return (
@@ -103,99 +140,145 @@ const ReportPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        {/* muncul jika proses generate pdf selsai (semua jenis laporan) */}
-        {reportGenerated && (
-          <>
-            <IonItem lines="full">
+        <IonAccordionGroup expand="compact">
+          <IonAccordion value="daily">
+            <IonItem slot="header" lines="full">
               <IonLabel>
-                <h2>Laporan Selesai dibuat!</h2>
+                <h2>Laporan Harian</h2>
               </IonLabel>
             </IonItem>
-            <IonItem>
-              <IonButton expand="block" size='default' onClick={downloadPDF} disabled={isLoading}>
-                Download PDF!
-              </IonButton>
+            <div className="ion-padding" slot="content">
+              <IonItem>
+                <IonDatetime
+                  presentation="date"
+                  onIonChange={(e) => {
+                    const value = e.detail.value!;
+                    if (value && typeof value === "string") {
+                      const selectedDateOnly = value ? value.split("T")[0] : '';
+                      setSelectedDate(selectedDateOnly);
+                    }
+                  }}
+                />
+              </IonItem>
+              <IonItem>
+                <IonButton
+                  expand="block"
+                  disabled={!selectedDate}
+                  onClick={handleGenerateDaily}
+                >
+                  Buat Laporan Hari {selectedDate}
+                </IonButton>
+              </IonItem>
+            </div>
+          </IonAccordion>
+
+          <IonAccordion value="last-days">
+            <IonItem slot="header" lines="full">
+              <IonLabel>
+                <h2>Laporan -H</h2>
+              </IonLabel>
             </IonItem>
-          </>
-        )}
-        <IonList>
-          <IonItem lines="full">
-            <IonLabel>
-              <h2>Laporan Harian</h2>
-            </IonLabel>
-          </IonItem>
-          <IonItem>
-            {/* <IonDatetime
-              presentation="date"
-              onIonChange={(e) => {
-                const value = e.detail.value!;
-                setSelectedDate(value);
-              }}
-            ></IonDatetime> */}
-          </IonItem>
-          <IonItem>
-            <IonButton
-              expand="block"
-              disabled={!selectedDate}
-              onClick={handleGenerateDaily}
-            >
-              Buat Laporan Hari {selectedDate}
-            </IonButton>
-          </IonItem>
-          <IonItem lines="full">
-            <IonLabel>
-              <h2>Laporan -H</h2>
-            </IonLabel>
-          </IonItem>
-          <IonItem>
-            <IonButton expand="block" onClick={handleGenerateLast30Days}>
-              Buat Laporan 30 Hari Terakhir
-            </IonButton>
-          </IonItem>
-          <IonItem>
-            <IonButton expand="block" onClick={handleGenerateLast7Days}>
-              Buat Laporan 7 Hari Terakhir
-            </IonButton>
-          </IonItem>
+            <div className="ion-padding" slot="content">
+              <IonItem>
+                <IonButton expand="block" onClick={handleGenerateLast30Days}>
+                  Buat Laporan 30 Hari Terakhir
+                </IonButton>
+              </IonItem>
+              <IonItem>
+                <IonButton expand="block" onClick={handleGenerateLast7Days}>
+                  Buat Laporan 7 Hari Terakhir
+                </IonButton>
+              </IonItem>
+            </div>
+          </IonAccordion>
 
+          <IonAccordion value="monthly">
+            <IonItem slot="header" lines="full">
+              <IonLabel>
+                <h2>Laporan Bulanan</h2>
+              </IonLabel>
+            </IonItem>
+            <div className="ion-padding" slot="content">
+              <IonItem>
+                <IonDatetime
+                  presentation="month"
+                  onIonChange={(e) => {
+                    const value = e.detail.value;
+                    if (value && typeof value === "string") {
+                      const [year, month] = value.split("-");
+                      setSelectedYear(year);
+                      setSelectedMonth(month);
+                    }
+                  }}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel>Tahun</IonLabel>
+                <IonSelect
+                  value={selectedYear}
+                  placeholder="Pilih Tahun"
+                  onIonChange={(e) => {
+                    const value = e.detail.value;
+                    setSelectedYear(value);
+                  }}
+                >
+                  {Array.from({ length: 5 }, (_, idx) => {
+                    const year = new Date().getFullYear() - idx;
+                    return (
+                      <IonSelectOption key={year} value={year.toString()}>
+                        {year}
+                      </IonSelectOption>
+                    );
+                  })}
+                </IonSelect>
+              </IonItem>
+              <IonItem>
+                <IonButton
+                  expand="block"
+                  disabled={!selectedMonth || !selectedYear}
+                  onClick={handleGenerateMonthly}
+                >
+                  Buat Laporan Bulan {selectedMonth} Tahun {selectedYear}
+                </IonButton>
+              </IonItem>
+            </div>
+          </IonAccordion>
+        </IonAccordionGroup>
 
-          <IonItem lines="full">
-            <IonLabel>
-              <h2>Laporan Bulan Berjalan</h2>
-            </IonLabel>
-          </IonItem>
-          <IonItem>
-            {/* <IonDatetime
-              presentation="month"
-              onIonChange={(e) => {
-                const value = e.detail.value!;
-                const [year, month] = value.split("-");
-                setSelectedYear(year);
-                setSelectedMonth(month);
-              }}
-            ></IonDatetime> */}
-          </IonItem>
-          <IonItem>
-            <IonButton
-              expand="block"
-              disabled={!selectedMonth || !selectedYear}
-              onClick={handleGenerateMonthly}
-            >
-              Buat Laporan Bulan {selectedMonth} Tahun {selectedYear}
-            </IonButton>
-          </IonItem>
-
-
-        </IonList>
         <ChartRenderer ref={chartRef}
           transactionsReport={transactionReport}
           productSellsReport={productSellsReport}
-          setWidth={reportGenerated}
+          setWidth={isChartWidth}
+          isDayReport={isDayReport}
         />
         <IonLoading
           isOpen={isLoading}
           message={'Tunggu sebentar, laporan sedang dibuat...'}
           spinner="dots"
+        />
+        <IonAlert
+          isOpen={showAlert}
+          onDidDismiss={() => setShowAlert(false)}
+          header="Informasi"
+          message={alertMessage}
+          buttons={['OK']}
+        />
+        <IonAlert
+          isOpen={showDownloadAlert}
+          onDidDismiss={() => setShowDownloadAlert(false)}
+          header="Laporan Selesai Dibuat!"
+          message={alertMessage}
+          buttons={[
+            {
+              text: 'Kembali',
+              role: 'cancel',
+              handler: () => setShowDownloadAlert(false)
+            },
+            {
+              text: 'Download',
+              handler: downloadPDF
+            }
+          ]}
         />
       </IonContent>
     </IonPage>
