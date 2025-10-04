@@ -15,68 +15,77 @@ import {
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
-  IonCol, IonGrid, IonRow,
+  IonCol,
+  IonGrid,
+  IonRow,
   IonSearchbar,
-  IonList, IonItem,
+  IonList,
+  IonItem,
   IonModal,
   IonItemSliding,
   IonItemOption,
   IonItemOptions,
-  useIonViewWillEnter, IonAlert
-} from '@ionic/react';
-import { time, people, location } from 'ionicons/icons';
+  useIonViewWillEnter,
+  IonAlert,
+} from "@ionic/react";
+import { time, people, location } from "ionicons/icons";
 
-import { useState, useRef, useEffect } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
-import { getTransactionHistory, findTransactionHistory } from '../../hooks/restAPIRequest';
+import { useState, useRef, useEffect } from "react";
+import { useHistory, useLocation } from "react-router-dom";
+import {
+  getTransactionHistory,
+  findTransactionHistory,
+} from "../../hooks/restAPIRequest";
 // import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./TransactionHistory.css";
-import { rupiahFormat, shortDate } from '../../hooks/formatting';
-import Receipt from '../../components/Receipt';
+import { rupiahFormat, shortDate } from "../../hooks/formatting";
+import Receipt from "../../components/Receipt";
 
-import dayjs from 'dayjs';
-import TransactionHistoryDetail from '../kasir/TransactionHistoryDetail';
-
-
-
+import dayjs from "dayjs";
+import TransactionHistoryDetail from "../kasir/TransactionHistoryDetail";
 
 const TransactionHistory: React.FC = () => {
   const modalDetail = useRef<HTMLIonModalElement>(null);
-  const [kasirUsername, setKasirUsername] = useState<{ id: string | number, name: string }>({ id: '', name: 'Semua Kasir' });
-  const [selectedBranch, setSelectedBranch] = useState<{ id: string | number, name: string }>({ id: '', name: 'Semua Cabang' });
+  const [kasirUsername, setKasirUsername] = useState<{
+    id: string | number;
+    name: string;
+  }>({ id: "", name: "Semua Kasir" });
+  const [selectedBranch, setSelectedBranch] = useState<{
+    id: string | number;
+    name: string;
+  }>({ id: "", name: "Semua Cabang" });
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>("today");
 
   const [showKasirAlert, setShowKasirAlert] = useState(false);
   const [showBranchAlert, setShowBranchAlert] = useState(false);
   const [showDateFilterAlert, setShowDateFilterAlert] = useState(false);
 
-  const [transactionsHistory, setTransactionsHistory] = useState<any[]>([])
-  const [selectedTransactionCode, setSelectedTransactionCode] = useState<string | null>(null)
+  const [transactionsHistory, setTransactionsHistory] = useState<any[]>([]);
+  const [selectedTransactionCode, setSelectedTransactionCode] = useState<
+    string | null
+  >(null);
 
   const branches = [
-    { id: '', name: "Semua Cabang" },
+    { id: "", name: "Semua Cabang" },
     { id: 1, name: "Masjid Raya" },
-    { id: 2, name: "Veteran" }
+    { id: 2, name: "Veteran" },
   ];
 
   const kasirs = [
-    { id: '', name: "Semua Kasir" },
+    { id: "", name: "Semua Kasir" },
     { id: 1, name: "ila" },
     { id: 2, name: "admin" },
-    { id: 3, name: "kasir" }
+    { id: 3, name: "kasir" },
   ];
-
 
   // setup Alert
   const [alert, setAlert] = useState<AlertState>({
     showAlert: false,
-    header: '',
-    alertMesage: '',
+    header: "",
+    alertMesage: "",
     hideButton: false,
   });
-
-
 
   const LoadData = async () => {
     try {
@@ -85,21 +94,41 @@ const TransactionHistory: React.FC = () => {
 
       if (!isNaN(Number(selectedDateFilter))) {
         // N hari ke belakang
-        startDate = dayjs().subtract(Number(selectedDateFilter), "day").format("YYYY-MM-DD");
+        startDate = dayjs()
+          .subtract(Number(selectedDateFilter), "day")
+          .format("YYYY-MM-DD");
       } else if (/^\w{3}-\d{4}$/.test(selectedDateFilter)) {
         const [monthStr, yearStr] = selectedDateFilter.split("-");
-        const monthIndex = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(monthStr.toLowerCase());
+        const monthIndex = [
+          "jan",
+          "feb",
+          "mar",
+          "apr",
+          "may",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "oct",
+          "nov",
+          "dec",
+        ].indexOf(monthStr.toLowerCase());
         if (monthIndex >= 0) {
-          startDate = dayjs(`${yearStr}-${monthIndex + 1}-01`).startOf('month').format("YYYY-MM-DD");
-          endDate = dayjs(startDate).endOf('month').format("YYYY-MM-DD");
+          startDate = dayjs(`${yearStr}-${monthIndex + 1}-01`)
+            .startOf("month")
+            .format("YYYY-MM-DD");
+          endDate = dayjs(startDate).endOf("month").format("YYYY-MM-DD");
         }
       } else if (selectedDateFilter === "today") {
         startDate = "today";
       }
 
       const result = await getTransactionHistory({
-        username: kasirUsername.name === "Semua Kasir" ? "" : kasirUsername.name,
-        branch: selectedBranch.id ? parseInt(String(selectedBranch.id)) : undefined,
+        username:
+          kasirUsername.name === "Semua Kasir" ? "" : kasirUsername.name,
+        branch: selectedBranch.id
+          ? parseInt(String(selectedBranch.id))
+          : undefined,
         start_date: startDate,
         end_date: endDate,
       });
@@ -112,16 +141,19 @@ const TransactionHistory: React.FC = () => {
   useIonViewWillEnter(() => {
     LoadData();
     getTransactionDetail();
-  })
+  });
 
   const getTransactionDetail = async () => {
-    const TransactionDetails = await findTransactionHistory('C1-070525-140316-ADMIN')
-    console.log(TransactionDetails)
-  }
+    const TransactionDetails = await findTransactionHistory(
+      "C2-041025-102243-KASIR"
+    );
+    // const TransactionDetails = await findTransactionHistory('C1-070525-140316-ADMIN')
+    console.log(TransactionDetails);
+  };
 
   useEffect(() => {
     LoadData();
-  }, [kasirUsername, selectedBranch, selectedDateFilter])
+  }, [kasirUsername, selectedBranch, selectedDateFilter]);
 
   const getDateFilterLabel = (filter: string): string => {
     if (filter === "today") return "Hari Ini";
@@ -137,23 +169,33 @@ const TransactionHistory: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>
-            Riwayat Transaksi
-          </IonTitle>
+          <IonTitle>Riwayat Transaksi</IonTitle>
         </IonToolbar>
         <IonToolbar>
-          <IonSearchbar placeholder='Cari Transaksi'></IonSearchbar>
+          <IonSearchbar placeholder="Cari Transaksi"></IonSearchbar>
         </IonToolbar>
-        <IonToolbar className='filter-container'>
-          <IonButton size='small' color="medium" onClick={() => setShowDateFilterAlert(true)}>
-            <IonIcon icon={time} size='small' />
+        <IonToolbar className="filter-container">
+          <IonButton
+            size="small"
+            color="medium"
+            onClick={() => setShowDateFilterAlert(true)}
+          >
+            <IonIcon icon={time} size="small" />
             <span> {getDateFilterLabel(selectedDateFilter)}</span>
           </IonButton>
-          <IonButton size='small' color="medium" onClick={() => setShowKasirAlert(true)}>
+          <IonButton
+            size="small"
+            color="medium"
+            onClick={() => setShowKasirAlert(true)}
+          >
             Kasir : {kasirUsername.name}
           </IonButton>
-          <IonButton size='small' color="medium" onClick={() => setShowBranchAlert(true)}>
-            <IonIcon icon={location} size='small' /> : {selectedBranch.name}
+          <IonButton
+            size="small"
+            color="medium"
+            onClick={() => setShowBranchAlert(true)}
+          >
+            <IonIcon icon={location} size="small" /> : {selectedBranch.name}
           </IonButton>
         </IonToolbar>
       </IonHeader>
@@ -162,12 +204,16 @@ const TransactionHistory: React.FC = () => {
           {transactionsHistory.length > 0 ? (
             transactionsHistory.map((item, index) => (
               // <IonItemSliding key={index}>
-              <IonItem key={index} onClick={() => setSelectedTransactionCode(item.transaction_code)}>
-                <IonLabel color='medium'>
+              <IonItem
+                key={index}
+                onClick={() =>
+                  setSelectedTransactionCode(item.transaction_code)
+                }
+              >
+                <IonLabel color="medium">
                   <span>{shortDate(item.date)} </span>
-                  Jam: <span>{item.time}</span> | <span>
-                    {rupiahFormat(item.total_price)}
-                  </span>
+                  Jam: <span>{item.time}</span> |{" "}
+                  <span>{rupiahFormat(item.total_price)}</span>
                 </IonLabel>
               </IonItem>
             ))
@@ -176,9 +222,13 @@ const TransactionHistory: React.FC = () => {
               <IonLabel>Tidak ada transaksis.</IonLabel>
             </IonItem>
           )}
-
         </IonList>
-        <IonModal ref={modalDetail} trigger="open-detail-transaction" initialBreakpoint={1} breakpoints={[0, 1]}>
+        <IonModal
+          ref={modalDetail}
+          trigger="open-detail-transaction"
+          initialBreakpoint={1}
+          breakpoints={[0, 1]}
+        >
           <h1>Detail Transaksi</h1>
         </IonModal>
       </IonContent>
@@ -194,23 +244,23 @@ const TransactionHistory: React.FC = () => {
         buttons={[
           {
             text: "Batal",
-            role: "cancel"
+            role: "cancel",
           },
           {
             text: "Pilih",
             handler: (selectedName: string) => {
-              const kasir = kasirs.find(k => k.name === selectedName);
+              const kasir = kasirs.find((k) => k.name === selectedName);
               if (kasir) {
                 setKasirUsername(kasir);
               }
-            }
-          }
+            },
+          },
         ]}
-        inputs={kasirs.map(kasir => ({
+        inputs={kasirs.map((kasir) => ({
           label: kasir.name,
-          type: 'radio',
+          type: "radio",
           value: kasir.name,
-          checked: kasir.name === kasirUsername.name
+          checked: kasir.name === kasirUsername.name,
         }))}
       />
       <IonAlert
@@ -220,23 +270,23 @@ const TransactionHistory: React.FC = () => {
         buttons={[
           {
             text: "Batal",
-            role: "cancel"
+            role: "cancel",
           },
           {
             text: "Pilih",
             handler: (selectedId: string) => {
-              const cabang = branches.find(b => b.id === selectedId);
+              const cabang = branches.find((b) => b.id === selectedId);
               if (cabang) {
                 setSelectedBranch(cabang);
               }
-            }
-          }
+            },
+          },
         ]}
-        inputs={branches.map(branch => ({
+        inputs={branches.map((branch) => ({
           label: branch.name,
-          type: 'radio',
+          type: "radio",
           value: branch.id,
-          checked: branch.id === selectedBranch.id
+          checked: branch.id === selectedBranch.id,
         }))}
       />
       <IonAlert
@@ -289,7 +339,7 @@ const TransactionHistory: React.FC = () => {
         ]}
       />
     </IonPage>
-  )
+  );
 };
 
 export default TransactionHistory;
